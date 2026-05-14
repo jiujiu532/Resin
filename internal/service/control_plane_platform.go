@@ -344,6 +344,7 @@ type CreatePlatformRequest struct {
 	StickyTTL                        *string  `json:"sticky_ttl"`
 	RegexFilters                     []string `json:"regex_filters"`
 	RegionFilters                    []string `json:"region_filters"`
+	SubscriptionSources              []string `json:"subscription_sources"`
 	ReverseProxyMissAction           *string  `json:"reverse_proxy_miss_action"`
 	ReverseProxyEmptyAccountBehavior *string  `json:"reverse_proxy_empty_account_behavior"`
 	ReverseProxyFixedAccountHeader   *string  `json:"reverse_proxy_fixed_account_header"`
@@ -383,6 +384,9 @@ func (s *ControlPlaneService) CreatePlatform(req CreatePlatformRequest) (*Platfo
 	}
 	if req.RegionFilters != nil {
 		cfg.RegionFilters = req.RegionFilters
+	}
+	if req.SubscriptionSources != nil {
+		cfg.SubscriptionSources = req.SubscriptionSources
 	}
 	if req.ReverseProxyMissAction != nil {
 		if err := setPlatformMissAction(&cfg, *req.ReverseProxyMissAction); err != nil {

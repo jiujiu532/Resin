@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Info, Plus, RefreshCw, Search, Sparkles } from "lucide-react";
+import { AlertTriangle, Info, Plus, RefreshCw, Search, Sparkles, X as XIcon } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +17,7 @@ import { useI18n } from "../../i18n";
 import { formatApiErrorMessage } from "../../lib/error-message";
 import { formatGoDuration, formatRelativeTime } from "../../lib/time";
 import { createPlatform, listPlatforms } from "./api";
+import { listSubscriptions } from "../subscriptions/api";
 import {
   allocationPolicies,
   allocationPolicyLabel,
@@ -45,6 +46,7 @@ export function PlatformPage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState<number>(24);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createSubscriptionSources, setCreateSubscriptionSources] = useState<string[]>([]);
   const { toasts, showToast, dismissToast } = useToast();
 
   const queryClient = useQueryClient();
@@ -70,6 +72,16 @@ export function PlatformPage() {
 
   const platforms = platformsQuery.data?.items ?? EMPTY_PLATFORMS;
 
+  const subscriptionsQuery = useQuery({
+    queryKey: ["subscriptions", "all"],
+    queryFn: async () => {
+      const data = await listSubscriptions({ limit: 100000, offset: 0 });
+      return data.items;
+    },
+    staleTime: 60_000,
+  });
+  const allSubscriptions = subscriptionsQuery.data ?? [];
+
   const totalPlatforms = platformsQuery.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalPlatforms / pageSize));
   const currentPage = Math.min(page, totalPages - 1);
@@ -86,6 +98,7 @@ export function PlatformPage() {
       await queryClient.invalidateQueries({ queryKey: ["platforms"] });
       setCreateModalOpen(false);
       createForm.reset();
+      setCreateSubscriptionSources([]);
       showToast("success", t("平台 {{name}} 创建成功", { name: created.name }));
       navigate(`/platforms/${created.id}`);
     },
@@ -95,7 +108,10 @@ export function PlatformPage() {
   });
 
   const onCreateSubmit = createForm.handleSubmit(async (values) => {
-    await createMutation.mutateAsync(toPlatformCreateInput(values));
+    await createMutation.mutateAsync({
+      ...toPlatformCreateInput(values),
+      subscription_sources: createSubscriptionSources,
+    });
   });
 
   const changePageSize = (next: number) => {
@@ -317,6 +333,63 @@ export function PlatformPage() {
                     <p className="field-error">{t(createForm.formState.errors.reverse_proxy_fixed_account_header.message)}</p>
                   ) : null}
                 </div>
+              </div>
+
+              <div className="field-group">
+                <label className="field-label">{t("订阅来源（可选）")}</label>
+                <p className="muted" style={{ marginTop: 0, marginBottom: 6, fontSize: 12 }}>
+                  {t("选择后，该平台只使用来自选定订阅的节点。不选则使用全部订阅。")}
+                </p>
+                {createSubscriptionSources.length > 0 ? (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginBottom: "0.5rem" }}>
+                    {createSubscriptionSources.map((subId) => {
+                      const sub = allSubscriptions.find((s) => s.id === subId);
+                      return (
+                        <span
+                          key={subId}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.4rem",
+                            padding: "5px 14px",
+                            borderRadius: "999px",
+                            background: "var(--primary-light, #e8f4fd)",
+                            color: "var(--primary, #1a73e8)",
+                            fontSize: "0.875rem",
+                            fontWeight: 500,
+                            border: "1px solid var(--primary-border, #b3d4f5)",
+                          }}
+                        >
+                          {sub?.name ?? subId}
+                          <button
+                            type="button"
+                            onClick={() => setCreateSubscriptionSources((prev) => prev.filter((id) => id !== subId))}
+                            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", color: "inherit" }}
+                            aria-label={t("移除")}
+                          >
+                            <XIcon size={12} />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                <Select
+                  value=""
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val && !createSubscriptionSources.includes(val)) {
+                      setCreateSubscriptionSources((prev) => [...prev, val]);
+                    }
+                  }}
+                >
+                  <option value="">{t("添加订阅来源...")}</option>
+                  {allSubscriptions
+                    .filter((s) => !createSubscriptionSources.includes(s.id))
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                </Select>
               </div>
 
               <div className="field-group">
