@@ -33,18 +33,30 @@ func (s *ControlPlaneService) ListNodes(filters NodeFilters) ([]NodeSummary, err
 		subLookup = s.Pool.MakeSubLookup()
 	}
 
-	// If platform_id filter, get the platform view.
+	// If platform_id filter, get the platform's blocked set and routable view.
 	var platformView map[node.Hash]struct{}
+	var platformBlockedSet map[node.Hash]struct{}
 	if filters.PlatformID != nil {
 		plat, ok := s.Pool.GetPlatform(*filters.PlatformID)
 		if !ok {
 			return nil, notFound("platform not found")
 		}
+		// Routable view (excludes blocked nodes).
 		platformView = make(map[node.Hash]struct{}, plat.View().Size())
 		plat.View().Range(func(h node.Hash) bool {
 			platformView[h] = struct{}{}
 			return true
 		})
+		// Also get the blocked set so we can include and mark them.
+		mp, err := s.Engine.GetPlatform(*filters.PlatformID)
+		if err == nil && len(mp.BlockedNodeHashes) > 0 {
+			platformBlockedSet = make(map[node.Hash]struct{}, len(mp.BlockedNodeHashes))
+			for _, hexStr := range mp.BlockedNodeHashes {
+				if h, parseErr := node.ParseHex(hexStr); parseErr == nil {
+					platformBlockedSet[h] = struct{}{}
+				}
+			}
+		}
 	}
 
 	var subNodes map[node.Hash]struct{}
@@ -68,7 +80,13 @@ func (s *ControlPlaneService) ListNodes(filters NodeFilters) ([]NodeSummary, err
 		if !s.nodeEntryMatchesFilters(entry, filters, subLookup) {
 			return
 		}
-		result = append(result, s.nodeEntryToSummary(h, entry))
+		ns := s.nodeEntryToSummary(h, entry)
+		if platformBlockedSet != nil {
+			if _, blocked := platformBlockedSet[h]; blocked {
+				ns.PlatformDisabled = true
+			}
+		}
+		result = append(result, ns)
 	}
 
 	appendIfMatchedHash := func(h node.Hash) {
@@ -79,11 +97,23 @@ func (s *ControlPlaneService) ListNodes(filters NodeFilters) ([]NodeSummary, err
 		appendIfMatched(h, entry)
 	}
 
+	// Build the combined candidate set: routable nodes + platform-blocked nodes.
+	combinedPlatformView := platformView
+	if platformBlockedSet != nil && len(platformBlockedSet) > 0 {
+		combinedPlatformView = make(map[node.Hash]struct{}, len(platformView)+len(platformBlockedSet))
+		for h := range platformView {
+			combinedPlatformView[h] = struct{}{}
+		}
+		for h := range platformBlockedSet {
+			combinedPlatformView[h] = struct{}{}
+		}
+	}
+
 	switch {
-	case platformView != nil && subNodes != nil:
+	case combinedPlatformView != nil && subNodes != nil:
 		// Iterate the smaller candidate set, then intersect by membership.
-		if len(platformView) <= len(subNodes) {
-			for h := range platformView {
+		if len(combinedPlatformView) <= len(subNodes) {
+			for h := range combinedPlatformView {
 				if _, ok := subNodes[h]; !ok {
 					continue
 				}
@@ -91,14 +121,14 @@ func (s *ControlPlaneService) ListNodes(filters NodeFilters) ([]NodeSummary, err
 			}
 		} else {
 			for h := range subNodes {
-				if _, ok := platformView[h]; !ok {
+				if _, ok := combinedPlatformView[h]; !ok {
 					continue
 				}
 				appendIfMatchedHash(h)
 			}
 		}
-	case platformView != nil:
-		for h := range platformView {
+	case combinedPlatformView != nil:
+		for h := range combinedPlatformView {
 			appendIfMatchedHash(h)
 		}
 	case subNodes != nil:

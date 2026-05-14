@@ -197,7 +197,7 @@ function isPendingTestNode(node: NodeSummary): boolean {
 }
 
 function getNodeDisplayStatus(node: NodeSummary): NodeDisplayStatus {
-  if (node.globally_disabled || !node.enabled) {
+  if (node.globally_disabled || node.platform_disabled || !node.enabled) {
     return "disabled";
   }
   if (!node.has_outbound) {
@@ -945,7 +945,13 @@ export function NodesPage() {
           <Button
             size="sm"
             variant="danger"
-            onClick={() => setShowDeleteConfirm(true)}
+            onClick={() => {
+              if (localStorage.getItem(DELETE_CONFIRM_STORAGE_KEY) === "1") {
+                void deleteMutation.mutateAsync([...selectedHashes]);
+              } else {
+                setShowDeleteConfirm(true);
+              }
+            }}
             style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}
             title={t("删除操作不可恢复，将从所有平台和总节点池中彻底删除")}
           >
@@ -986,6 +992,10 @@ export function NodesPage() {
             columns={nodeColumns}
             onRowClick={(node) => openDrawer(node.node_hash)}
             getRowId={(node) => node.node_hash}
+            getRowClassName={(node) => {
+              const status = getNodeDisplayStatus(node);
+              return status === "disabled" ? "data-table-row-disabled" : undefined;
+            }}
           />
         ) : null}
 

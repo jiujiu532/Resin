@@ -9,6 +9,7 @@ export type NodeSummary = {
   created_at: string;
   enabled: boolean;
   globally_disabled: boolean;
+  platform_disabled: boolean;
   display_tag?: string;
   has_outbound: boolean;
   last_error?: string;

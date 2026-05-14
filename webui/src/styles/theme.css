@@ -3089,3 +3089,12 @@ a {
     transform: translateY(-20px) scale(0.92);
   }
 }
+
+.data-table-row-disabled {
+  opacity: 0.45;
+  filter: grayscale(0.3);
+}
+
+.data-table-row-disabled:hover {
+  opacity: 0.55;
+}

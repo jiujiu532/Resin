@@ -31,6 +31,7 @@ function normalizeNode(raw: ApiNodeSummary): NodeSummary {
     ...rest,
     enabled: raw.enabled !== false,
     globally_disabled: raw.globally_disabled === true,
+    platform_disabled: (raw as any).platform_disabled === true,
     display_tag: raw.display_tag || "",
     tags: Array.isArray(raw.tags) ? raw.tags : [],
     last_error: raw.last_error || "",

@@ -612,6 +612,7 @@ type NodeSummary struct {
 	CreatedAt                        string    `json:"created_at"`
 	Enabled                          bool      `json:"enabled"`
 	GloballyDisabled                 bool      `json:"globally_disabled"`
+	PlatformDisabled                 bool      `json:"platform_disabled"` // true if blocked in the queried platform
 	DisplayTag                       string    `json:"display_tag,omitempty"`
 	HasOutbound                      bool      `json:"has_outbound"`
 	LastError                        string    `json:"last_error,omitempty"`

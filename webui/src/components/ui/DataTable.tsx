@@ -7,6 +7,7 @@ type DataTableProps<T> = {
     onRowClick?: (row: T) => void;
     selectedRowId?: string;
     getRowId?: (row: T) => string;
+    getRowClassName?: (row: T) => string | undefined;
     className?: string;
     wrapClassName?: string;
 };
@@ -17,6 +18,7 @@ export function DataTable<T>({
     onRowClick,
     selectedRowId,
     getRowId,
+    getRowClassName,
     className,
     wrapClassName,
 }: DataTableProps<T>) {
@@ -46,10 +48,12 @@ export function DataTable<T>({
                 <tbody>
                     {table.getRowModel().rows.map((row) => {
                         const isSelected = selectedRowId != null && row.id === selectedRowId;
+                        const extraClass = getRowClassName ? (getRowClassName(row.original) ?? "") : "";
+                        const baseClass = isSelected ? "data-table-row-selected" : onRowClick ? "clickable-row" : "";
                         return (
                             <tr
                                 key={row.id}
-                                className={isSelected ? "data-table-row-selected" : onRowClick ? "clickable-row" : undefined}
+                                className={[baseClass, extraClass].filter(Boolean).join(" ") || undefined}
                                 onClick={onRowClick ? () => onRowClick(row.original) : undefined}
                             >
                                 {row.getVisibleCells().map((cell) => (
