@@ -105,7 +105,7 @@ func TestFlushWorker_SkipsEmptyDirty(t *testing.T) {
 		ReadSubscriptionNode: func(k SubscriptionNodeDirtyKey) *model.SubscriptionNode { return nil },
 	}
 
-	// Very short interval â€?if not skipping empty, would spam flushes.
+	// Very short interval if not skipping empty, would spam flushes.
 	w := NewCacheFlushWorker(
 		engine,
 		readers,
@@ -140,7 +140,7 @@ func TestFlushWorker_StopFinalFlush(t *testing.T) {
 		ReadSubscriptionNode: func(k SubscriptionNodeDirtyKey) *model.SubscriptionNode { return nil },
 	}
 
-	// Very high threshold + very long interval â†?won't auto-flush.
+	// Very high threshold + very long interval won't auto-flush.
 	w := NewCacheFlushWorker(
 		engine,
 		readers,

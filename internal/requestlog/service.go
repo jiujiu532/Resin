@@ -77,7 +77,7 @@ func (s *Service) EmitRequestLog(entry proxy.RequestLogEntry) {
 	select {
 	case s.queue <- entry:
 	default:
-		// Queue full â€?drop entry to avoid blocking hot path.
+		// Queue full drop entry to avoid blocking hot path.
 	}
 }
 

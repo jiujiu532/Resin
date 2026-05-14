@@ -63,7 +63,7 @@ type RouteResult struct {
 	PlatformName string
 	NodeHash     node.Hash
 	EgressIP     netip.Addr
-	NodeTag      string // display tag: "<Subscription>/<Tag>" (DESIGN.md §601)
+	NodeTag      string // display tag: "<Subscription>/<Tag>" (DESIGN.md 601)
 	LeaseCreated bool
 }
 

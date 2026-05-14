@@ -179,7 +179,7 @@ func TestRepairConsistency_ValidRecordsSurvive(t *testing.T) {
 		{PlatformID: "p1", Account: "a1", NodeHash: "n1", ExpiryNs: 9999, LastAccessedNs: 1},
 	})
 
-	// Run repair â€?nothing should be deleted.
+	// Run repair nothing should be deleted.
 	RepairConsistency(stateDBPath, cdb)
 
 	nodes, _ := cacheRepo.LoadAllNodesStatic()

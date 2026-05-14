@@ -9,7 +9,7 @@ import (
 // trafficFlushThreshold is the byte count at which a countingConn emits
 // a traffic delta mid-stream. This ensures realtime throughput sampling
 // and bucket aggregation see traffic during long-lived connections, not only
-// at close. Fixed constant — not configurable.
+// at close. Fixed constant -- not configurable.
 const trafficFlushThreshold int64 = 32768 // 32 KB
 
 // trafficFlushInterval bounds how long sub-threshold pending bytes can remain
@@ -99,7 +99,7 @@ func (c *countingConn) flushPendingTraffic() {
 
 func (c *countingConn) Close() error {
 	if !c.closed.CompareAndSwap(false, true) {
-		return nil // already closed — idempotent
+		return nil // already closed -- idempotent
 	}
 	// Flush remaining bytes.
 	c.flushPendingTraffic()

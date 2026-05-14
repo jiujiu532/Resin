@@ -336,7 +336,7 @@ func (p *ForwardProxy) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		proxyErr := classifyUpstreamError(err)
 		if proxyErr == nil {
-			// context.Canceled â€?skip health recording, close silently.
+			// context.Canceled skip health recording, close silently.
 			// Request ended due to client-side cancellation before upstream
 			// response; treat as net-ok in request log semantics.
 			lifecycle.setNetOK(true)
@@ -369,7 +369,7 @@ func (p *ForwardProxy) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Full body transfer succeeded â€?count as network success even for 5xx HTTP.
+	// Full body transfer succeeded count as network success even for 5xx HTTP.
 	go p.health.RecordResult(routed.Route.NodeHash, true)
 }
 

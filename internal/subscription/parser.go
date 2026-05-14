@@ -178,7 +178,7 @@ func parseRawOutbounds(outbounds []json.RawMessage) []ParsedNode {
 	for _, raw := range outbounds {
 		var header outboundHeader
 		if err := json.Unmarshal(raw, &header); err != nil {
-			// Skip malformed individual outbound — do not fail the entire parse.
+			// Skip malformed individual outbound -- do not fail the entire parse.
 			continue
 		}
 		if !supportedOutboundTypes[header.Type] {
@@ -1883,7 +1883,7 @@ func normalizeDurationValue(raw any, defaultUnit string) (string, bool) {
 
 func hasLetter(value string) bool {
 	for _, r := range value {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == 'µ' {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == '' {
 			return true
 		}
 	}

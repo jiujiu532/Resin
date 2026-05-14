@@ -25,7 +25,7 @@ type OutboundBuilder interface {
 }
 
 // ---------------------------------------------------------------------------
-// SingboxBuilder — creates real sing-box adapter.Outbound instances.
+// SingboxBuilder -- creates real sing-box adapter.Outbound instances.
 // ---------------------------------------------------------------------------
 
 // SingboxBuilder builds real sing-box outbound instances from raw JSON options.
@@ -128,7 +128,7 @@ func (b *SingboxBuilder) Build(rawOptions json.RawMessage) (adapter.Outbound, er
 	logger := b.logFactory.NewLogger("outbound/" + outboundConfig.Type)
 	ob, err := b.registry.CreateOutbound(
 		b.ctx,
-		nil, // router — not needed for simple dialing
+		nil, // router -- not needed for simple dialing
 		logger,
 		outboundConfig.Tag,
 		outboundConfig.Type,

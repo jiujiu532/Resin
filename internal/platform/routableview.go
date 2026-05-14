@@ -31,7 +31,7 @@ type RoutableView struct {
 type shard struct {
 	mu    sync.RWMutex
 	nodes []node.Hash
-	index map[node.Hash]int // hash â†?position in nodes slice
+	index map[node.Hash]int // hash position in nodes slice
 }
 
 // NewRoutableView creates an empty RoutableView.

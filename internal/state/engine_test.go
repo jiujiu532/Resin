@@ -190,7 +190,7 @@ func TestEngine_WeakPersist_CacheDataSurvivesRestart(t *testing.T) {
 	}
 }
 
-// --- Weak persist: dirty mark â†?flush â†?verify ---
+// --- Weak persist: dirty mark flush verify ---
 
 func TestEngine_WeakPersist_FlushAndLoad(t *testing.T) {
 	engine, _, _ := newTestEngine(t)

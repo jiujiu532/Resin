@@ -10,7 +10,7 @@ type Platform struct {
 	StickyTTLNs                      int64  `json:"sticky_ttl_ns"`
 	RegexFilters                     []string
 	RegionFilters                    []string
-	BlockedNodeHashes                []string // 平台级节点黑名单（node hash hex 列表）
+	BlockedNodeHashes                []string // node hash hex 
 	ReverseProxyMissAction           string `json:"reverse_proxy_miss_action"`
 	ReverseProxyEmptyAccountBehavior string `json:"reverse_proxy_empty_account_behavior"`
 	ReverseProxyFixedAccountHeader   string `json:"reverse_proxy_fixed_account_header"`

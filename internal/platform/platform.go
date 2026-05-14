@@ -32,7 +32,7 @@ type Platform struct {
 	RegexFilters  []*regexp.Regexp
 	RegionFilters []string // lowercase ISO codes, supports negation "!xx"
 
-	// 平台级节点黑名单，key �?node.Hash�?	blockedNodes map[node.Hash]struct{}
+	// key node.Hash	blockedNodes map[node.Hash]struct{}
 
 	// Other config fields.
 	StickyTTLNs                      int64
@@ -86,13 +86,13 @@ func (p *Platform) IsNodeBlocked(h node.Hash) bool {
 }
 
 // View returns the platform's routable view as a read-only interface.
-// External callers cannot Add/Remove/Clear �?only FullRebuild and NotifyDirty can mutate.
+// External callers cannot Add/Remove/Clear only FullRebuild and NotifyDirty can mutate.
 func (p *Platform) View() ReadOnlyView {
 	return p.view
 }
 
 // FullRebuild clears the routable view and re-evaluates all nodes from the pool.
-// Acquires viewMu �?any concurrent NotifyDirty calls block until rebuild completes.
+// Acquires viewMu any concurrent NotifyDirty calls block until rebuild completes.
 func (p *Platform) FullRebuild(
 	poolRange PoolRangeFunc,
 	subLookup node.SubLookupFunc,
@@ -111,7 +111,7 @@ func (p *Platform) FullRebuild(
 }
 
 // NotifyDirty re-evaluates a single node and adds/removes it from the view.
-// Acquires viewMu �?serialized with FullRebuild.
+// Acquires viewMu serialized with FullRebuild.
 func (p *Platform) NotifyDirty(
 	h node.Hash,
 	getEntry GetEntryFunc,
@@ -175,7 +175,7 @@ func (p *Platform) evaluateNode(
 		return false
 	}
 
-	// 6. 平台级节点黑名单�?	if p.IsNodeBlocked(entry.Hash) {
+	// 6. 	if p.IsNodeBlocked(entry.Hash) {
 		return false
 	}
 

@@ -58,7 +58,7 @@ func NewLatencyTable(maxEntries int) *LatencyTable {
 //
 // TD-EWMA formula:
 //
-//	weight = exp(-Δt / decayWindow)
+//	weight = exp(-t / decayWindow)
 //	newEwma = oldEwma * weight + latency * (1 - weight)
 //
 // For the first observation of a domain, Ewma is set to the raw latency.

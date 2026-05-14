@@ -429,7 +429,7 @@ func (p *ReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ErrorHandler: func(rw http.ResponseWriter, req *http.Request, err error) {
 			proxyErr := classifyUpstreamError(err)
 			if proxyErr == nil {
-				// context.Canceled â€?no health recording, silently close.
+				// context.Canceled no health recording, silently close.
 				// Treat as net-ok for request-log semantics when canceled
 				// before upstream response.
 				lifecycle.setNetOK(true)

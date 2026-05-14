@@ -506,7 +506,7 @@ func TestScheduler_FailurePath_Serialized(t *testing.T) {
 	}
 	sched := newTestScheduler(subMgr, pool, fetcher)
 
-	// Run concurrent updates â€?all failure paths should serialize via WithSubLock.
+	// Run concurrent updates all failure paths should serialize via WithSubLock.
 	var wg sync.WaitGroup
 	for i := 0; i < 20; i++ {
 		wg.Add(1)
@@ -706,13 +706,13 @@ func TestScheduler_ConcurrentUpdateAndRename(t *testing.T) {
 func TestScheduler_DueCheck(t *testing.T) {
 	subMgr := NewSubscriptionManager()
 
-	// Sub that was checked 2 hours ago with 1-hour interval â†?due.
+	// Sub that was checked 2 hours ago with 1-hour interval due.
 	dueSub := subscription.NewSubscription("s1", "Due", "http://example.com", true, false)
 	dueSub.SetFetchConfig(dueSub.URL(), int64(time.Hour))
 	dueSub.LastCheckedNs.Store(time.Now().Add(-2 * time.Hour).UnixNano())
 	subMgr.Register(dueSub)
 
-	// Sub that was just checked â†?not due.
+	// Sub that was just checked not due.
 	notDueSub := subscription.NewSubscription("s2", "NotDue", "http://example.com", true, false)
 	notDueSub.SetFetchConfig(notDueSub.URL(), int64(time.Hour))
 	notDueSub.LastCheckedNs.Store(time.Now().UnixNano())
@@ -1124,7 +1124,7 @@ func TestPlatform_ReadOnlyView_Interface(t *testing.T) {
 	}
 
 	// The key constraint: callers with only a ReadOnlyView cannot call
-	// Add/Remove/Clear â€?there are no such methods on the interface.
+	// Add/Remove/Clear there are no such methods on the interface.
 	// This is enforced at compile time, not runtime.
 	// (Go's type assertion can still recover the concrete type, but API
 	// consumers using the interface type cannot accidentally mutate.)
@@ -1175,7 +1175,7 @@ func TestScheduler_SetSubscriptionEnabled_RebuildsPlatformViews(t *testing.T) {
 	// Create scheduler for SetSubscriptionEnabled.
 	sched := newTestScheduler(subMgr, pool, nil)
 
-	// Disable â†?node should disappear from platform view.
+	// Disable node should disappear from platform view.
 	sched.SetSubscriptionEnabled(sub, false)
 	if sub.Enabled() {
 		t.Fatal("sub should be disabled")
@@ -1184,7 +1184,7 @@ func TestScheduler_SetSubscriptionEnabled_RebuildsPlatformViews(t *testing.T) {
 		t.Fatalf("expected 0 nodes in view after disable, got %d", plat.View().Size())
 	}
 
-	// Re-enable â†?node should reappear.
+	// Re-enable node should reappear.
 	sched.SetSubscriptionEnabled(sub, true)
 	if !sub.Enabled() {
 		t.Fatal("sub should be re-enabled")

@@ -13,7 +13,7 @@ const (
 )
 
 // DirtySet tracks dirty keys with their operation type.
-// It stores only keys — values are read from memory at flush time.
+// It stores only keys -- values are read from memory at flush time.
 // Thread-safe via mutex; drain uses map-swap for a stable snapshot.
 type DirtySet[K comparable] struct {
 	mu sync.Mutex

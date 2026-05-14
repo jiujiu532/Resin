@@ -301,7 +301,7 @@ func TestFetch_OutboundNotReady(t *testing.T) {
 	pool.addEntry(entry)
 
 	mgr := NewOutboundManager(pool, &testutil.StubOutboundBuilder{})
-	// Don't call EnsureNodeOutbound â€?outbound remains nil.
+	// Don't call EnsureNodeOutbound outbound remains nil.
 
 	ctx := context.Background()
 	_, _, err := mgr.Fetch(ctx, entry.Hash, "http://example.com")

@@ -111,7 +111,7 @@ func (m *AccountMatcher) MatchWithPrefix(host, path string) (string, []string) {
 
 	segments := []string{host}
 	if path != "" {
-		// Strip query string â€?URL prefix rules never contain '?'.
+		// Strip query string URL prefix rules never contain '?'.
 		if qi := strings.IndexByte(path, '?'); qi >= 0 {
 			path = path[:qi]
 		}

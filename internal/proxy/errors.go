@@ -101,7 +101,7 @@ func classifyUpstreamError(err error) *ProxyError {
 	if err == nil {
 		return nil
 	}
-	// Client-initiated cancel â€?not a node failure.
+	// Client-initiated cancel not a node failure.
 	if errors.Is(err, context.Canceled) {
 		return nil
 	}

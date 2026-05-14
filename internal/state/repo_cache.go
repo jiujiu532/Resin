@@ -356,8 +356,8 @@ type FlushOps struct {
 
 // FlushTx executes all upserts and deletes in a single transaction.
 //
-// Upsert order: nodes_static â†?subscription_nodes â†?nodes_dynamic â†?node_latency â†?leases
-// Delete order: leases â†?node_latency â†?nodes_dynamic â†?subscription_nodes â†?nodes_static
+// Upsert order: nodes_static subscription_nodes nodes_dynamic node_latency leases
+// Delete order: leases node_latency nodes_dynamic subscription_nodes nodes_static
 func (r *CacheRepo) FlushTx(ops FlushOps) error {
 	tx, err := r.db.Begin()
 	if err != nil {

@@ -37,7 +37,7 @@ func TestRoutableView_AddRemoveContains(t *testing.T) {
 		t.Fatalf("expected size 1, got %d", rv.Size())
 	}
 
-	// Remove non-existent â€?no-op.
+	// Remove non-existent no-op.
 	rv.Remove(h1)
 	if rv.Size() != 1 {
 		t.Fatal("size should still be 1")

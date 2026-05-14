@@ -318,7 +318,7 @@ func newTopologyRuntime(
 	pool.SetOnNodeAdded(func(hash node.Hash) {
 		engine.MarkNodeStatic(hash.Hex())
 		outboundMgr.EnsureNodeOutbound(hash)
-		// No NotifyNodeDirty here â€?AddNodeFromSub already notifies all platforms.
+		// No NotifyNodeDirty here AddNodeFromSub already notifies all platforms.
 		probeMgr.TriggerImmediateEgressProbe(hash)
 	})
 	pool.SetOnNodeRemoved(func(hash node.Hash, entry *node.NodeEntry) {
@@ -973,7 +973,7 @@ func restoreBootstrapNodeLatencies(
 }
 
 // bootstrapNodes loads cached node data from persistence for bootstrap recovery.
-// Steps: static nodes â†?subscription bindings â†?dynamic state â†?latency tables.
+// Steps: static nodes subscription bindings dynamic state latency tables.
 func bootstrapNodes(
 	engine *state.StateEngine,
 	pool *topology.GlobalNodePool,
