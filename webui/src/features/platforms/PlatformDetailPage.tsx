@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Info, RefreshCw, ShieldOff, Trash2, X as XIcon } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Info, RefreshCw, X as XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
@@ -15,8 +15,7 @@ import { useToast } from "../../hooks/useToast";
 import { useI18n } from "../../i18n";
 import { formatApiErrorMessage } from "../../lib/error-message";
 import { formatGoDuration, formatRelativeTime } from "../../lib/time";
-import { blockNode, clearAllPlatformLeases, deletePlatform, getPlatform, listBlockedNodes, resetPlatform, unblockNode, updatePlatform } from "./api";
-import type { BlockedNodeItem } from "./api";
+import { clearAllPlatformLeases, deletePlatform, getPlatform, resetPlatform, updatePlatform } from "./api";
 import { listSubscriptions } from "../subscriptions/api";
 import {
   allocationPolicies,
@@ -572,132 +571,11 @@ export function PlatformDetailPage() {
                     </Button>
                   </div>
                 </div>
-                <BlockedNodesPanel platformId={platform.id} showToast={showToast} />
               </section>
             ) : null}
           </Card>
         </>
       ) : null}
     </section>
-  );
-}
-
-type ShowToastFn = (type: "success" | "error", message: string) => void;
-
-function BlockedNodesPanel({ platformId, showToast }: { platformId: string; showToast: ShowToastFn }) {
-  const { t } = useI18n();
-  const queryClient = useQueryClient();
-  const [manualHash, setManualHash] = useState("");
-
-  const blockedQuery = useQuery({
-    queryKey: ["platform-blocked-nodes", platformId],
-    queryFn: () => listBlockedNodes(platformId),
-    enabled: Boolean(platformId),
-  });
-
-  const blockedNodes: BlockedNodeItem[] = blockedQuery.data ?? [];
-
-  const unblockMutation = useMutation({
-    mutationFn: (nodeHash: string) => unblockNode(platformId, nodeHash),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["platform-blocked-nodes", platformId] });
-      await queryClient.invalidateQueries({ queryKey: ["platform", platformId] });
-      showToast("success", t("节点已从黑名单移除"));
-    },
-    onError: (error) => {
-      showToast("error", formatApiErrorMessage(error, t));
-    },
-  });
-
-  const blockManualMutation = useMutation({
-    mutationFn: (nodeHash: string) => blockNode(platformId, nodeHash),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["platform-blocked-nodes", platformId] });
-      await queryClient.invalidateQueries({ queryKey: ["platform", platformId] });
-      setManualHash("");
-      showToast("success", t("节点已加入黑名单"));
-    },
-    onError: (error) => {
-      showToast("error", formatApiErrorMessage(error, t));
-    },
-  });
-
-  return (
-    <div style={{ marginTop: "2rem" }}>
-      <div className="platform-drawer-section-head">
-        <h4 style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-          <ShieldOff size={16} />
-          {t("节点黑名单")}
-        </h4>
-        <p>{t("在此平台拉黑的节点不会参与路由，其他平台不受影响。")}</p>
-      </div>
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", marginTop: "0.75rem" }}>
-        <Input
-          value={manualHash}
-          onChange={(e) => setManualHash(e.target.value)}
-          placeholder={t("输入节点 Hash（32位十六进制）")}
-          style={{ flex: 1, fontSize: "0.875rem" }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && manualHash.trim()) {
-              void blockManualMutation.mutateAsync(manualHash.trim());
-            }
-          }}
-        />
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => {
-            if (manualHash.trim()) {
-              void blockManualMutation.mutateAsync(manualHash.trim());
-            }
-          }}
-          disabled={!manualHash.trim() || blockManualMutation.isPending}
-        >
-          {blockManualMutation.isPending ? t("拉黑中...") : t("加入黑名单")}
-        </Button>
-      </div>
-      {blockedQuery.isLoading ? (
-        <p className="muted" style={{ fontSize: "0.875rem" }}>{t("正在加载...")}</p>
-      ) : blockedNodes.length === 0 ? (
-        <p className="muted" style={{ fontSize: "0.875rem" }}>{t("当前黑名单为空")}</p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          {blockedNodes.map((item) => (
-            <div
-              key={item.node_hash}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "0.5rem 0.75rem",
-                background: "var(--surface-2, #f5f5f5)",
-                borderRadius: "6px",
-                gap: "0.5rem",
-              }}
-            >
-              <div style={{ minWidth: 0 }}>
-                {item.display_tag ? (
-                  <p style={{ margin: 0, fontWeight: 500, fontSize: "0.875rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {item.display_tag}
-                  </p>
-                ) : null}
-                <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-secondary)", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {item.node_hash}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                title={t("从黑名单移除")}
-                onClick={() => void unblockMutation.mutateAsync(item.node_hash)}
-                disabled={unblockMutation.isPending}
-              >
-                <Trash2 size={14} />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
   );
 }

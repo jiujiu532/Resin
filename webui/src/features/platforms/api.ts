@@ -115,29 +115,3 @@ export async function clearAllPlatformLeases(id: string): Promise<void> {
   });
 }
 
-// --- Platform-level node blocklist ---
-
-export type BlockedNodeItem = {
-  node_hash: string;
-  display_tag?: string;
-};
-
-export async function listBlockedNodes(platformId: string): Promise<BlockedNodeItem[]> {
-  return apiRequest<BlockedNodeItem[]>(`${basePath}/${platformId}/blocked-nodes`);
-}
-
-export async function blockNode(platformId: string, nodeHash: string): Promise<Platform> {
-  const data = await apiRequest<ApiPlatform>(`${basePath}/${platformId}/blocked-nodes`, {
-    method: "POST",
-    body: { node_hash: nodeHash },
-  });
-  return normalizePlatform(data);
-}
-
-export async function unblockNode(platformId: string, nodeHash: string): Promise<Platform> {
-  const data = await apiRequest<ApiPlatform>(
-    `${basePath}/${platformId}/blocked-nodes/${nodeHash}`,
-    { method: "DELETE" }
-  );
-  return normalizePlatform(data);
-}
