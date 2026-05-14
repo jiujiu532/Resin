@@ -3,3 +3,13 @@ sing-box-reference
 .agents
 .devcontainer
 start-instance.sh
+
+# Ignore screenshots and local notes
+*.jpg
+*.jpeg
+*.png
+*.gif
+报告文档
+报告文档*
+功能拓展*
+PixPin_*
