@@ -197,7 +197,7 @@ function isPendingTestNode(node: NodeSummary): boolean {
 }
 
 function getNodeDisplayStatus(node: NodeSummary): NodeDisplayStatus {
-  if (!node.enabled) {
+  if (node.globally_disabled || !node.enabled) {
     return "disabled";
   }
   if (!node.has_outbound) {

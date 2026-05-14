@@ -12,6 +12,7 @@ const basePath = "/api/v1/nodes";
 type ApiNodeSummary = Omit<NodeSummary, "tags"> & {
   tags?: NodeSummary["tags"] | null;
   enabled?: boolean | null;
+  globally_disabled?: boolean | null;
   display_tag?: string | null;
   last_error?: string | null;
   circuit_open_since?: string | null;
@@ -29,6 +30,7 @@ function normalizeNode(raw: ApiNodeSummary): NodeSummary {
   const normalized: NodeSummary = {
     ...rest,
     enabled: raw.enabled !== false,
+    globally_disabled: raw.globally_disabled === true,
     display_tag: raw.display_tag || "",
     tags: Array.isArray(raw.tags) ? raw.tags : [],
     last_error: raw.last_error || "",

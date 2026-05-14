@@ -124,12 +124,16 @@ func (s *ControlPlaneService) nodeEntryMatchesFilters(
 	subLookup node.SubLookupFunc,
 ) bool {
 	// Enabled/disabled filter.
+	// A node is considered "disabled" if it is globally disabled OR all its subscriptions are disabled.
 	if filters.Enabled != nil {
-		enabled := true
+		globallyDisabled := s.Pool.IsGloballyDisabled(entry.Hash)
+		subscriptionDisabled := false
 		if subLookup != nil {
-			enabled = entry.HasEnabledSubscription(subLookup)
+			subscriptionDisabled = !entry.HasEnabledSubscription(subLookup)
 		}
-		if enabled != *filters.Enabled {
+		effectivelyDisabled := globallyDisabled || subscriptionDisabled
+		if *filters.Enabled == effectivelyDisabled {
+			// want enabled=true but node is disabled, or want enabled=false but node is enabled
 			return false
 		}
 	}
