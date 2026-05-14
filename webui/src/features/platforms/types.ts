@@ -8,6 +8,8 @@ export type Platform = {
   sticky_ttl: string;
   regex_filters: string[];
   region_filters: string[];
+  blocked_node_hashes: string[];
+  subscription_sources: string[];
   routable_node_count: number;
   reverse_proxy_miss_action: PlatformMissAction;
   reverse_proxy_empty_account_behavior: PlatformEmptyAccountBehavior;
@@ -39,6 +41,7 @@ export type PlatformUpdateInput = {
   sticky_ttl?: string;
   regex_filters?: string[];
   region_filters?: string[];
+  subscription_sources?: string[];
   reverse_proxy_miss_action?: PlatformMissAction;
   reverse_proxy_empty_account_behavior?: PlatformEmptyAccountBehavior;
   reverse_proxy_fixed_account_header?: string;

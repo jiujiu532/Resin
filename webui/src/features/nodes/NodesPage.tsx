@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createColumnHelper } from "@tanstack/react-table";
-import { AlertTriangle, Eraser, Globe, RefreshCw, ShieldOff, Sparkles, X, Zap } from "lucide-react";
+import { AlertTriangle, Ban, CheckSquare, Eraser, Globe, RefreshCw, ShieldOff, Sparkles, Trash2, X, Zap } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useLocation } from "react-router-dom";
 import { Badge } from "../../components/ui/Badge";
@@ -18,7 +18,7 @@ import { formatDateTime, formatRelativeTime } from "../../lib/time";
 import { blockNode, listPlatforms } from "../platforms/api";
 import type { Platform } from "../platforms/types";
 import { listSubscriptions } from "../subscriptions/api";
-import { getNode, listNodes, probeEgress, probeLatency } from "./api";
+import { deleteNodes, disableNodes, enableNodes, getNode, listNodes, probeEgress, probeLatency } from "./api";
 import type { NodeSummary } from "./types";
 import { getAllRegions, getRegionName } from "./regions";
 import type { NodeListFilters, NodeSortBy, SortOrder } from "./types";
@@ -275,6 +275,8 @@ export function NodesPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [pendingEgressHashes, setPendingEgressHashes] = useState<Set<string>>(() => new Set());
   const [pendingLatencyHashes, setPendingLatencyHashes] = useState<Set<string>>(() => new Set());
+  const [selectedHashes, setSelectedHashes] = useState<Set<string>>(() => new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { toasts, showToast, dismissToast } = useToast();
   const pendingEgressHashesRef = useRef<Set<string>>(new Set());
   const pendingLatencyHashesRef = useRef<Set<string>>(new Set());
@@ -381,6 +383,54 @@ export function NodesPage() {
       await queryClient.invalidateQueries({ queryKey: ["node", selectedHash] });
     }
   };
+
+  const toggleSelectHash = (hash: string) => {
+    setSelectedHashes((prev) => {
+      const next = new Set(prev);
+      if (next.has(hash)) next.delete(hash);
+      else next.add(hash);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedHashes.size === nodes.length && nodes.length > 0) {
+      setSelectedHashes(new Set());
+    } else {
+      setSelectedHashes(new Set(nodes.map((n) => n.node_hash)));
+    }
+  };
+
+  const disableMutation = useMutation({
+    mutationFn: (hashes: string[]) => disableNodes(hashes),
+    onSuccess: async () => {
+      await refreshNodes();
+      setSelectedHashes(new Set());
+      showToast("success", t("已禁用 {{count}} 个节点", { count: selectedHashes.size }));
+    },
+    onError: (error) => showToast("error", formatApiErrorMessage(error, t)),
+  });
+
+  const enableMutation = useMutation({
+    mutationFn: (hashes: string[]) => enableNodes(hashes),
+    onSuccess: async () => {
+      await refreshNodes();
+      setSelectedHashes(new Set());
+      showToast("success", t("已启用 {{count}} 个节点", { count: selectedHashes.size }));
+    },
+    onError: (error) => showToast("error", formatApiErrorMessage(error, t)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (hashes: string[]) => deleteNodes(hashes),
+    onSuccess: async () => {
+      await refreshNodes();
+      setSelectedHashes(new Set());
+      setShowDeleteConfirm(false);
+      showToast("success", t("已删除 {{count}} 个节点", { count: selectedHashes.size }));
+    },
+    onError: (error) => showToast("error", formatApiErrorMessage(error, t)),
+  });
 
   const probeEgressMutation = useMutation({
     mutationFn: async (hash: string) => probeEgress(hash),
@@ -522,6 +572,31 @@ export function NodesPage() {
   const col = createColumnHelper<NodeSummary>();
 
   const nodeColumns = [
+    col.display({
+      id: "select",
+      header: () => (
+        <input
+          type="checkbox"
+          checked={nodes.length > 0 && selectedHashes.size === nodes.length}
+          ref={(el) => {
+            if (el) el.indeterminate = selectedHashes.size > 0 && selectedHashes.size < nodes.length;
+          }}
+          onChange={toggleSelectAll}
+          aria-label={t("全选")}
+          style={{ cursor: "pointer" }}
+        />
+      ),
+      cell: (info) => (
+        <input
+          type="checkbox"
+          checked={selectedHashes.has(info.row.original.node_hash)}
+          onChange={() => toggleSelectHash(info.row.original.node_hash)}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={t("选择节点")}
+          style={{ cursor: "pointer" }}
+        />
+      ),
+    }),
     col.accessor((row) => firstTag(row), {
       id: "tag",
       header: () => (
@@ -665,7 +740,7 @@ export function NodesPage() {
     <section className="nodes-page">
       <header className="module-header">
         <div>
-          <h2>{t("节点池")}</h2>
+          <h2>{t("总节点池")}</h2>
           <p className="module-description">{t("快速定位异常节点并进行探测处理。")}</p>
         </div>
       </header>
@@ -678,6 +753,50 @@ export function NodesPage() {
             <h3>{t("节点列表")}</h3>
             <p>{t("共 {{total}} 个节点，{{healthy}} 个健康 IP", { total: nodesPage.total, healthy: nodesPage.unique_healthy_egress_ips })}</p>
           </div>
+
+          {selectedHashes.size > 0 ? (
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "0.875rem", color: "var(--text-secondary)" }}>
+                {t("已选 {{count}} 个", { count: selectedHashes.size })}
+              </span>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => void disableMutation.mutateAsync([...selectedHashes])}
+                disabled={disableMutation.isPending}
+                style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
+              >
+                <Ban size={14} />
+                {disableMutation.isPending ? t("禁用中...") : t("禁用")}
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => void enableMutation.mutateAsync([...selectedHashes])}
+                disabled={enableMutation.isPending}
+                style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
+              >
+                <CheckSquare size={14} />
+                {enableMutation.isPending ? t("启用中...") : t("启用")}
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => setShowDeleteConfirm(true)}
+                style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
+              >
+                <Trash2 size={14} />
+                {t("删除")}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedHashes(new Set())}
+              >
+                {t("取消选择")}
+              </Button>
+            </div>
+          ) : null}
 
           <div
             className="nodes-inline-filters"
@@ -839,6 +958,15 @@ export function NodesPage() {
           onPageSizeChange={changePageSize}
         />
       </Card>
+
+      {showDeleteConfirm ? (
+        <DeleteConfirmDialog
+          count={selectedHashes.size}
+          onConfirm={() => void deleteMutation.mutateAsync([...selectedHashes])}
+          onCancel={() => setShowDeleteConfirm(false)}
+          isPending={deleteMutation.isPending}
+        />
+      ) : null}
 
       {drawerVisible && detailNode ? (
         <div
@@ -1071,4 +1199,88 @@ function BlockNodePanel({
       </div>
     </div>
   );
+}
+
+const DELETE_CONFIRM_STORAGE_KEY = "resin_node_delete_no_confirm";
+
+function DeleteConfirmDialog({
+  count,
+  onConfirm,
+  onCancel,
+  isPending,
+}: {
+  count: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isPending: boolean;
+}) {
+  const { t } = useI18n();
+  const [noRemind, setNoRemind] = useState(false);
+
+  const handleConfirm = () => {
+    if (noRemind) {
+      localStorage.setItem(DELETE_CONFIRM_STORAGE_KEY, "1");
+    }
+    onConfirm();
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+      }}
+      onClick={onCancel}
+    >
+      <div
+        style={{
+          background: "var(--surface, #fff)",
+          borderRadius: "8px",
+          padding: "1.5rem",
+          maxWidth: "420px",
+          width: "90%",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 style={{ margin: "0 0 0.75rem", color: "var(--danger, #e53e3e)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <Trash2 size={18} />
+          {t("确认删除节点")}
+        </h3>
+        <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", lineHeight: 1.6 }}>
+          {t("即将永久删除 {{count}} 个节点。删除后将从所有平台和总节点池中移除，操作不可恢复。", { count })}
+        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem" }}>
+          <input
+            type="checkbox"
+            id="no-remind-delete"
+            checked={noRemind}
+            onChange={(e) => setNoRemind(e.target.checked)}
+            style={{ cursor: "pointer" }}
+          />
+          <label htmlFor="no-remind-delete" style={{ fontSize: "0.8rem", color: "var(--text-secondary)", cursor: "pointer" }}>
+            {t("我已了解风险，不再提醒")}
+          </label>
+        </div>
+        <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+          <Button variant="secondary" onClick={onCancel} disabled={isPending}>
+            {t("取消")}
+          </Button>
+          <Button variant="danger" onClick={handleConfirm} disabled={isPending}>
+            {isPending ? t("删除中...") : t("确认删除")}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Check if delete confirm should be skipped (user previously checked "don't remind").
+export function shouldSkipDeleteConfirm(): boolean {
+  return localStorage.getItem(DELETE_CONFIRM_STORAGE_KEY) === "1";
 }

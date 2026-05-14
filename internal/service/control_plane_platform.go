@@ -488,6 +488,12 @@ func (s *ControlPlaneService) UpdatePlatform(id string, patchJSON json.RawMessag
 		cfg.RegionFilters = filters
 	}
 
+	if sources, ok, err := patch.optionalStringSlice("subscription_sources"); err != nil {
+		return nil, err
+	} else if ok {
+		cfg.SubscriptionSources = sources
+	}
+
 	if ma, ok, err := patch.optionalString("reverse_proxy_miss_action"); err != nil {
 		return nil, err
 	} else if ok {

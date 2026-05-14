@@ -108,3 +108,24 @@ export async function probeLatency(hash: string): Promise<LatencyProbeResult> {
     method: "POST",
   });
 }
+
+export async function disableNodes(nodeHashes: string[]): Promise<void> {
+  await apiRequest<{ status: string }>(`${basePath}/actions/disable`, {
+    method: "POST",
+    body: { node_hashes: nodeHashes },
+  });
+}
+
+export async function enableNodes(nodeHashes: string[]): Promise<void> {
+  await apiRequest<{ status: string }>(`${basePath}/actions/enable`, {
+    method: "POST",
+    body: { node_hashes: nodeHashes },
+  });
+}
+
+export async function deleteNodes(nodeHashes: string[]): Promise<void> {
+  await apiRequest<{ status: string }>(`${basePath}/actions/delete`, {
+    method: "POST",
+    body: { node_hashes: nodeHashes },
+  });
+}
