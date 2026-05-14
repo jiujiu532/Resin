@@ -876,7 +876,6 @@ export function NodesPage() {
               </Button>
             </div>
           </div>
-        </div>
       </Card>
 
       {selectedHashes.size > 0 ? (
