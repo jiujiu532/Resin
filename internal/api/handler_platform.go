@@ -222,3 +222,55 @@ func HandlePreviewFilter(cp *service.ControlPlaneService) http.HandlerFunc {
 		WritePage(w, http.StatusOK, nodes, pg)
 	}
 }
+
+// HandleBatchDisableNodesInPlatform returns a handler for POST /api/v1/platforms/{id}/actions/batch-disable-nodes.
+func HandleBatchDisableNodesInPlatform(cp *service.ControlPlaneService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, ok := requireUUIDPathParam(w, r, "id", "platform_id")
+		if !ok {
+			return
+		}
+		var req struct {
+			NodeHashes []string `json:"node_hashes"`
+		}
+		if err := DecodeBody(r, &req); err != nil {
+			writeDecodeBodyError(w, err)
+			return
+		}
+		if len(req.NodeHashes) == 0 {
+			writeInvalidArgument(w, "node_hashes must not be empty")
+			return
+		}
+		if err := cp.BatchDisableNodesInPlatform(id, req.NodeHashes); err != nil {
+			writeServiceError(w, err)
+			return
+		}
+		WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	}
+}
+
+// HandleBatchEnableNodesInPlatform returns a handler for POST /api/v1/platforms/{id}/actions/batch-enable-nodes.
+func HandleBatchEnableNodesInPlatform(cp *service.ControlPlaneService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, ok := requireUUIDPathParam(w, r, "id", "platform_id")
+		if !ok {
+			return
+		}
+		var req struct {
+			NodeHashes []string `json:"node_hashes"`
+		}
+		if err := DecodeBody(r, &req); err != nil {
+			writeDecodeBodyError(w, err)
+			return
+		}
+		if len(req.NodeHashes) == 0 {
+			writeInvalidArgument(w, "node_hashes must not be empty")
+			return
+		}
+		if err := cp.BatchEnableNodesInPlatform(id, req.NodeHashes); err != nil {
+			writeServiceError(w, err)
+			return
+		}
+		WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	}
+}

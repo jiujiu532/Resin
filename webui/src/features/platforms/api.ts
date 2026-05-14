@@ -115,3 +115,17 @@ export async function clearAllPlatformLeases(id: string): Promise<void> {
   });
 }
 
+
+export async function batchDisableNodesInPlatform(platformId: string, nodeHashes: string[]): Promise<void> {
+  await apiRequest<{ status: string }>(`${basePath}/${platformId}/actions/batch-disable-nodes`, {
+    method: "POST",
+    body: { node_hashes: nodeHashes },
+  });
+}
+
+export async function batchEnableNodesInPlatform(platformId: string, nodeHashes: string[]): Promise<void> {
+  await apiRequest<{ status: string }>(`${basePath}/${platformId}/actions/batch-enable-nodes`, {
+    method: "POST",
+    body: { node_hashes: nodeHashes },
+  });
+}

@@ -16,7 +16,7 @@ import { useI18n } from "../../i18n";
 import { formatApiErrorMessage } from "../../lib/error-message";
 import { formatDateTime, formatRelativeTime } from "../../lib/time";
 import { deleteNodes, disableNodes, enableNodes, getNode, listNodes, probeEgress, probeLatency } from "./api";
-import { listPlatforms } from "../platforms/api";
+import { batchDisableNodesInPlatform, batchEnableNodesInPlatform, listPlatforms } from "../platforms/api";
 import type { Platform } from "../platforms/types";
 import { listSubscriptions } from "../subscriptions/api";
 import type { NodeSummary } from "./types";
@@ -402,7 +402,14 @@ export function NodesPage() {
   };
 
   const disableMutation = useMutation({
-    mutationFn: (hashes: string[]) => disableNodes(hashes),
+    mutationFn: (hashes: string[]) => {
+      // If filtered by a specific platform, use platform-level disable (only affects that platform).
+      // Otherwise use global disable (affects all platforms).
+      if (activeFilters.platform_id) {
+        return batchDisableNodesInPlatform(activeFilters.platform_id, hashes);
+      }
+      return disableNodes(hashes);
+    },
     onSuccess: async () => {
       await refreshNodes();
       setSelectedHashes(new Set());
@@ -412,7 +419,14 @@ export function NodesPage() {
   });
 
   const enableMutation = useMutation({
-    mutationFn: (hashes: string[]) => enableNodes(hashes),
+    mutationFn: (hashes: string[]) => {
+      // If filtered by a specific platform, use platform-level enable (only affects that platform).
+      // Otherwise use global enable (affects all platforms).
+      if (activeFilters.platform_id) {
+        return batchEnableNodesInPlatform(activeFilters.platform_id, hashes);
+      }
+      return enableNodes(hashes);
+    },
     onSuccess: async () => {
       await refreshNodes();
       setSelectedHashes(new Set());
@@ -890,6 +904,15 @@ export function NodesPage() {
         }}>
           <span style={{ fontSize: "0.875rem", color: "var(--text-secondary)", fontWeight: 500 }}>
             {t("已选 {{count}} 个节点", { count: selectedHashes.size })}
+            {activeFilters.platform_id ? (
+              <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", color: "var(--primary, #1a73e8)" }}>
+                ({t("平台级操作")})
+              </span>
+            ) : (
+              <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", color: "var(--warning, #d97706)" }}>
+                ({t("全局操作")})
+              </span>
+            )}
           </span>
           <Button
             size="sm"

@@ -772,3 +772,90 @@ func (s *ControlPlaneService) PreviewFilter(req PreviewFilterRequest) ([]NodeSum
 	return result, nil
 }
 
+
+// BatchDisableNodesInPlatform adds multiple nodes to a platform's blocklist.
+func (s *ControlPlaneService) BatchDisableNodesInPlatform(platformID string, nodeHashes []string) error {
+	if len(nodeHashes) == 0 {
+		return nil
+	}
+	for _, h := range nodeHashes {
+		if _, err := node.ParseHex(h); err != nil {
+			return invalidArg("node_hash: invalid hex format: " + h)
+		}
+	}
+	mp, err := s.getPlatformModel(platformID)
+	if err != nil {
+		return err
+	}
+	existing := make(map[string]struct{}, len(mp.BlockedNodeHashes))
+	for _, h := range mp.BlockedNodeHashes {
+		existing[h] = struct{}{}
+	}
+	changed := false
+	for _, h := range nodeHashes {
+		if _, ok := existing[h]; !ok {
+			mp.BlockedNodeHashes = append(mp.BlockedNodeHashes, h)
+			existing[h] = struct{}{}
+			changed = true
+		}
+	}
+	if !changed {
+		return nil
+	}
+	mp.UpdatedAtNs = time.Now().UnixNano()
+	if err := s.Engine.UpsertPlatform(*mp); err != nil {
+		return internal("persist platform blocked nodes", err)
+	}
+	cfg := platformConfigFromModel(*mp)
+	plat, err2 := cfg.toRuntime(platformID)
+	if err2 != nil {
+		return internal("build platform runtime", err2)
+	}
+	plat.GlobalDisabledFn = s.Pool.IsGloballyDisabled
+	if err := s.Pool.ReplacePlatform(plat); err != nil {
+		return internal("replace platform in pool", err)
+	}
+	return nil
+}
+
+// BatchEnableNodesInPlatform removes multiple nodes from a platform's blocklist.
+func (s *ControlPlaneService) BatchEnableNodesInPlatform(platformID string, nodeHashes []string) error {
+	if len(nodeHashes) == 0 {
+		return nil
+	}
+	mp, err := s.getPlatformModel(platformID)
+	if err != nil {
+		return err
+	}
+	removeSet := make(map[string]struct{}, len(nodeHashes))
+	for _, h := range nodeHashes {
+		removeSet[h] = struct{}{}
+	}
+	newHashes := make([]string, 0, len(mp.BlockedNodeHashes))
+	changed := false
+	for _, h := range mp.BlockedNodeHashes {
+		if _, remove := removeSet[h]; remove {
+			changed = true
+			continue
+		}
+		newHashes = append(newHashes, h)
+	}
+	if !changed {
+		return nil
+	}
+	mp.BlockedNodeHashes = newHashes
+	mp.UpdatedAtNs = time.Now().UnixNano()
+	if err := s.Engine.UpsertPlatform(*mp); err != nil {
+		return internal("persist platform blocked nodes", err)
+	}
+	cfg := platformConfigFromModel(*mp)
+	plat, err2 := cfg.toRuntime(platformID)
+	if err2 != nil {
+		return internal("build platform runtime", err2)
+	}
+	plat.GlobalDisabledFn = s.Pool.IsGloballyDisabled
+	if err := s.Pool.ReplacePlatform(plat); err != nil {
+		return internal("replace platform in pool", err)
+	}
+	return nil
+}
