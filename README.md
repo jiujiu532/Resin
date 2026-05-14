@@ -1,5 +1,3 @@
-[English](README.md) | [简体中文](README.zh-CN.md)
-
 <div align="center">
   <img src="webui/public/vite.svg" width="48" alt="Resin Logo" />
   <h1>Resin</h1>
@@ -7,85 +5,58 @@
 </div>
 
 <p align="center">
-  <a href="https://github.com/Resinat/Resin/releases"><img src="https://img.shields.io/github/v/release/Resinat/Resin?style=flat-square&label=release&sort=semver" alt="Release" /></a>
-  <a href="https://github.com/Resinat/Resin/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/Resinat/Resin/release.yml?style=flat-square&label=release%20pipeline" alt="Release Pipeline" /></a>
-  <a href="https://github.com/Resinat/Resin/pkgs/container/resin"><img src="https://img.shields.io/badge/ghcr-ghcr.io%2Fresinat%2Fresin-2496ED?style=flat-square&logo=docker&logoColor=white" alt="GHCR Image" /></a>
-  <a href="https://github.com/Resinat/Resin/blob/master/LICENSE"><img src="https://img.shields.io/github/license/Resinat/Resin?style=flat-square" alt="License" /></a>
-  <a href="https://github.com/Resinat/Resin/blob/master/go.mod"><img src="https://img.shields.io/github/go-mod/go-version/Resinat/Resin?style=flat-square" alt="Go Version" /></a>
-  <a href="https://github.com/Resinat/Resin/releases"><img src="https://img.shields.io/badge/support-linux%20%7C%20macOS%20%7C%20windows%20%C2%B7%20amd64%20%7C%20arm64-0A7EA4?style=flat-square" alt="Support Matrix" /></a>
-  <a href="DESIGN.md"><img src="https://img.shields.io/badge/docs-DESIGN.md-1F6FEB?style=flat-square" alt="Design Docs" /></a>
+  <a href="https://github.com/jiujiu532/Resin/releases"><img src="https://img.shields.io/github/v/release/jiujiu532/Resin?style=flat-square&label=release&sort=semver" alt="Release" /></a>
+  <a href="https://github.com/jiujiu532/Resin/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/jiujiu532/Resin/release.yml?style=flat-square&label=build" alt="Build" /></a>
+  <a href="https://github.com/jiujiu532/Resin/pkgs/container/resin"><img src="https://img.shields.io/badge/ghcr-ghcr.io%2Fjiujiu532%2Fresin-2496ED?style=flat-square&logo=docker&logoColor=white" alt="GHCR Image" /></a>
+  <a href="https://github.com/jiujiu532/Resin/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jiujiu532/Resin?style=flat-square" alt="License" /></a>
 </p>
 
----
-
-**Resin** is a **high-performance intelligent proxy pool gateway** built for operating massive numbers of proxy nodes.
-
-It helps shield your services from unstable underlying proxy nodes by aggregating distributed proxy resources into a unified proxy entrypoint with **session stickiness (sticky routing)**.
-
-## 💡 Why Resin?
-
-- **Massive-scale management**: Easily handles 100k+ proxy nodes with native high-concurrency performance.
-- **Smart scheduling and circuit breaking**: Fully automated **passive + active** health checks, outbound IP probing, and latency analysis to remove bad nodes precisely. Uses P2C plus domain-aware latency-weighted scoring for optimal node selection.
-- **Business-friendly sticky proxying**: Keeps the same business account bound to a stable outbound IP. If a node fails, Resin seamlessly switches to another node with the same IP.
-- **Multiple access modes**: Supports HTTP forward proxy, SOCKS5 forward proxy, and URL-based reverse proxy for different clients and integration styles.
-- **Observability**: Detailed metrics and logs, plus a visual Web UI. Includes complete structured request logs for querying and auditing by platform, account, target site, and more.
-- **Simple and powerful**: Works out of the box with default settings, while still offering deep customization for enterprise-grade needs.
-- **Cross-subscription deduplication**: Automatically merges identical nodes from different subscriptions and shares their health state.
-- **Hot reload**: Update common settings without restart. Refresh subscriptions without dropping existing traffic.
-- **Persistent state**: Keeps node health, latency stats, and lease bindings across restarts.
-- **Zero-intrusion sticky access**: Can extract account identity from existing request headers (for example API keys), so clients often need no code changes.
-- **Incremental subscription refresh**: Syncs subscription updates without interrupting current connections.
-- **Flexible node isolation**: Use Platform rules (regex, region, etc.) to build independent proxy pools for different business scenarios.
-
-> [!TIP]
-> You can feed this README and [`DESIGN.md`](DESIGN.md) to AI and ask it anything about the project.
-
-![](doc/images/dashboard_en-us.png)
+[简体中文](README.zh-CN.md) | English
 
 ---
 
-## 🔌 Supported Protocols and Subscription Formats
+**Resin** is a high-performance intelligent proxy pool gateway. This fork adds a **platform-level node blocklist** on top of the original.
 
-### Subscription sources
+## ✨ Added Features
 
-- Remote subscription URL: `http://` or `https://`.
-- Local subscription content: paste subscription content directly in the UI/API.
+**Platform-level node blocklist**: Block specific nodes from routing within a platform without affecting other platforms.
 
-### Subscription content formats
+- Node Pool page → click a node → Ops section → select platform → Block
+- Platform detail page → Ops tab → Node Blocklist → view / remove blocked nodes
 
-- sing-box JSON: `{"outbounds":[...]}` or raw outbound array `[...]`.
-- Clash JSON/YAML: `{"proxies":[...]}` or YAML `proxies:`.
-- URI line format (one node per line): `vmess://`, `vless://`, `trojan://`, `ss://`, `hysteria2://`, `http://`, `https://`, `socks5://`, `socks5h://`.
-  For `http://`, `https://`, `socks5://`, `socks5h://`, use `scheme://[user:pass@]host:port` (optional `#tag`; `https` also supports `sni`/`servername`/`peer` and `allowInsecure`/`insecure` query parameters).
-- Plain HTTP proxy lines: `IP:PORT` or `IP:PORT:USER:PASS` (IPv4 and IPv6).
-- Base64-wrapped text subscriptions (for URI lines/plain-text node lists).
+---
 
-### Supported outbound node types
+## 💡 Core Features
 
-- For sing-box JSON/raw outbounds: `socks`, `http`, `shadowsocks`, `vmess`, `trojan`, `wireguard`, `hysteria`, `vless`, `shadowtls`, `tuic`, `hysteria2`, `anytls`, `ssh`.
-- For Clash conversion: `ss`/`shadowsocks`, `socks`/`socks4`/`socks4a`/`socks5`, `http`, `vmess`, `vless`, `trojan`, `wireguard`/`wg`, `hysteria`, `hysteria2`/`hy2`, `tuic`, `anytls`, `ssh`.
+- **Massive scale**: Handles 100k+ proxy nodes natively.
+- **Smart scheduling**: Passive + active health checks, egress IP probing, latency analysis, P2C algorithm.
+- **Sticky sessions**: Same account stays on the same egress IP; seamless failover to same-IP backup nodes.
+- **Multiple access modes**: HTTP forward proxy, SOCKS5 forward proxy, URL reverse proxy.
+- **Observability**: Web UI + structured request logs, queryable by platform, account, and target.
+- **Hot reload**: Config changes without restart, subscription refresh without dropping connections.
+- **Persistent state**: Node health, latency stats, and lease bindings survive restarts.
+- **Node blocklist** (this fork): Precisely exclude nodes per platform.
 
-## 🚀 Quick Start
+---
 
-In just three steps, you can turn your proxy subscriptions into a highly available proxy pool.
+## 🚀 Deployment
 
-### Step 1: Deploy and start
+### Option 1: Docker Compose (Recommended)
 
-Docker Compose is the recommended quick-start path:
+**1. Create `docker-compose.yml`**
 
 ```yaml
-# docker-compose.yml
 services:
   resin:
-    image: ghcr.io/resinat/resin:latest
+    image: ghcr.io/jiujiu532/resin:latest
     container_name: resin
     restart: unless-stopped
     environment:
-      RESIN_AUTH_VERSION: "V1" # Required: LEGACY_V0 or V1
-      RESIN_ADMIN_TOKEN: "admin123" # Change to your admin dashboard password
-      RESIN_PROXY_TOKEN: "my-token" # Change to your proxy password
-      RESIN_LISTEN_ADDRESS: 0.0.0.0
-      RESIN_PORT: 2260
+      RESIN_AUTH_VERSION: "V1"
+      RESIN_ADMIN_TOKEN: "your-admin-password"
+      RESIN_PROXY_TOKEN: "your-proxy-token"
+      RESIN_LISTEN_ADDRESS: "0.0.0.0"
+      RESIN_PORT: "2260"
     ports:
       - "2260:2260"
     volumes:
@@ -94,272 +65,184 @@ services:
       - ./data/log:/var/log/resin
 ```
 
-Run `docker compose up -d` to start the service.
-
-*(If you don't want Docker, jump to [Other Deployment Options](#other-deployment-options).)*
-
-### Step 2: Import proxy nodes
-
-1. Open `http://127.0.0.1:2260` in your browser (replace with your server IP if needed).
-2. Log in with the `RESIN_ADMIN_TOKEN` you set.
-3. Go to **Subscriptions** in the left menu and add your node subscription.
-4. Wait briefly for the node pool to refresh.
-
-### Step 3: Start sending proxy requests
-
-See the following sections for client access modes. In common scenarios, you can choose HTTP forward proxy, SOCKS5 forward proxy, or reverse proxy based on what your client supports.
-
-## 🟢 Basic Usage (Non-sticky Proxy)
-
-### Connect as a standard proxy
-
-If you just need a high-performance, large-capacity proxy pool with automatic health management, Resin works out of the box.
-
-Once Resin is running, you can choose HTTP forward proxy, SOCKS5 forward proxy, or reverse proxy based on what your client supports.
-If you do not want a proxy password, explicitly set `RESIN_PROXY_TOKEN=""` (the variable must still be defined). Then HTTP forward proxy is available at `http://127.0.0.1:2260`, and SOCKS5 forward proxy is available at `socks5://127.0.0.1:2260`.
-
-HTTP forward proxy example:
+**2. Start**
 
 ```bash
-curl -x http://127.0.0.1:2260 \
-  -U ":my-token" \
-  https://api.ipify.org
+docker compose up -d
 ```
 
-SOCKS5 forward proxy example (available only when `RESIN_AUTH_VERSION=V1`):
+**3. Open the Web UI**
 
-```bash
-curl --proxy socks5h://127.0.0.1:2260 \
-  -U "Default:my-token" \
-  https://api.ipify.org
-```
-
-If you are still running `LEGACY_V0`, SOCKS5 inbound is not enabled. Keep using HTTP forward proxy, or complete migration before switching to `V1`. When `RESIN_PROXY_TOKEN=""`, SOCKS5 also allows unauthenticated access.
-
-If your client supports overriding `BASE_URL`, you can also use reverse-proxy mode.
-URL format: `/token/Platform(optional).Account(optional)/protocol/target`.
-Example request to `https://api.ipify.org`:
-
-```bash
-curl http://127.0.0.1:2260/my-token/./https/api.ipify.org
-```
-
-> Choosing forward vs reverse proxy: when possible, reverse proxy is recommended for better observability. If your client cannot change BaseURL, or requires scenarios better served by forward proxy (such as uTLS or non-WebAPI traffic), use forward proxy.
-
-### Filter nodes
-
-If your service needs specific nodes (for example by region, subscription source, or name regex), use Resin's Platform feature.
-
-Open `http://127.0.0.1:2260/ui/platforms` and create a Platform. For example, to use only US and HK nodes, create `MyPlatform` and set region filters to:
-
-```
-us
-hk
-```
-
-For forward proxy (HTTP / SOCKS5), include Platform in the auth info. Examples:
-
-```bash
-curl -x http://127.0.0.1:2260 \
-  -U "MyPlatform:my-token" \
-  https://api.ipify.org
-```
-
-```bash
-curl --proxy socks5h://127.0.0.1:2260 \
-  -U "MyPlatform:my-token" \
-  https://api.ipify.org
-```
-
-For reverse proxy, include Platform in the URL prefix:
-
-```bash
-curl http://127.0.0.1:2260/my-token/MyPlatform/https/api.ipify.org
-```
-
-## 📖 Advanced Usage: Sticky Session Proxy
-
-When your business depends on IP continuity or long-lived interactions, use Resin's core feature: **sticky proxying**.
-
-First, understand two core concepts:
-
-### 🎯 Core Concepts: Platform and Account
-
-- **Platform**: An isolated node pool. You can build it with filters (for example, only US nodes). Resin provides a default `Default` platform containing all available nodes.
-- **Account**: A unique business identity (for example `Tom` or `user_1`). For requests carrying an Account, Resin anchors traffic to a dedicated high-quality outbound node. If that node fails, Resin retries seamlessly and switches to another node with the same IP.
-
-### Sticky proxy access formats
-
-#### Method 1: Forward proxy (HTTP Proxy / SOCKS5)
-
-With `RESIN_AUTH_VERSION=V1`, HTTP forward proxy and SOCKS5 forward proxy share the same identity format: `Platform.Account:RESIN_PROXY_TOKEN`.
-
-> To keep the legacy V0 format, set `RESIN_AUTH_VERSION=LEGACY_V0` and continue using `RESIN_PROXY_TOKEN:Platform:Account`. SOCKS5 forward proxy is not enabled in that mode.
-
-Just put the identity in proxy authentication:
-
-```bash
-# HTTP forward proxy: bind business account user_tom to a stable dedicated outbound IP
-curl -x http://127.0.0.1:2260 \
-  -U "Default.user_tom:my-token" \
-  https://api.ipify.org
-```
-
-```bash
-# SOCKS5 forward proxy: uses the same identity format as HTTP forward proxy
-curl --proxy socks5h://127.0.0.1:2260 \
-  -U "Default.user_tom:my-token" \
-  https://api.ipify.org
-```
-
-#### Method 2: Reverse proxy (URL Account, quick/manual debug)
-
-By replacing your service BaseURL with Resin reverse-proxy URL, traffic goes through Resin directly.
-Advanced URL format: `http://host:2260/token/platform.account/protocol/target`:
-
-```bash
-# Example: user_tom accesses api.ipify.org over https
-curl "http://127.0.0.1:2260/my-token/Default.user_tom/https/api.ipify.org"
-```
-
-> The URL Account segment is designed for quick use and manual debugging.
-> For long-running production integrations, prefer passing Account by header (`X-Resin-Account`).
-
-#### Method 3: Reverse proxy + `X-Resin-Account` header (recommended production integration)
-
-If your client/SDK supports custom request headers, pass Account explicitly with `X-Resin-Account`.
-This is the recommended and most stable method.
-
-Account source priority: `X-Resin-Account` header > Account in reverse-proxy URL > header extraction rules.
-
-Example:
-
-```bash
-curl "http://127.0.0.1:2260/my-token/MyPlatform/https/api.example.com/v1/orders" \
-  -H "X-Resin-Account: user_tom"
-```
-
-#### Method 4: Reverse proxy + header rules (zero/low-intrusion integration)
-
-If your client cannot set `X-Resin-Account`, Resin can still extract Account from existing business headers (for example API Key, Token, Cookie) via header rules.
-
-Assume your requests already include an `Authorization` header:
-
-1. In Platform Configuration, set `Reverse-proxy empty-account behavior` to `Extract specified request headers as Account`.
-2. Set `Headers used to extract Account` to `Authorization`.
-
-Then even if Account is omitted in URL, Resin can still parse it from headers:
-
-```bash
-curl "http://127.0.0.1:2260/my-token/MyPlatform/https/api.example.com/v1/orders" \
-  -H "Authorization: sk-abc123"
-```
-
-In this example, Resin uses `sk-abc123` as Account. Future requests with the same key are intended to stay bound to the same outbound IP whenever routing conditions allow.
-
-> [!TIP]
-> Beyond Platform header config, Resin also supports advanced rules that pick extraction headers by URL prefix. You can ask AI to explain both modes with this README and [DESIGN.md](DESIGN.md).
-
-> Enable header-based Account extraction only when you have a valid legal basis (for example user authorization or contractual permission), and ensure your logging, retention, and access-control policies comply with applicable laws and target-service terms.
+Navigate to `http://YOUR_SERVER_IP:2260` and log in with `RESIN_ADMIN_TOKEN`. Add your proxy subscriptions under **Subscriptions**.
 
 ---
 
-## 🤖 Integrating Third-party Projects
+### Option 2: Docker Run
 
-Different clients integrate Resin differently, with different code-intrusion levels.
-
-💡 **If you do not need sticky proxying**
-
-| Access Method | Code Intrusion | Notes |
-| :--- | :--- | :--- |
-| Forward proxy | 🟢 **Zero intrusion** | Just configure an HTTP or SOCKS5 proxy address plus credentials. |
-| Reverse proxy | 🟢 **Zero/low intrusion** | Usually only requires changing service BaseURL. |
-
-💡 **If you need sticky proxying**
-
-| Access Method | Code Intrusion | Notes |
-| :--- | :--- | :--- |
-| Forward proxy | 🟡 **Medium intrusion** | Per-user requests need different auth info. Under V1, both HTTP and SOCKS5 can use `platform.account:token`. |
-| Reverse proxy | 🟡 **Medium intrusion** | Add `X-Resin-Account` request header or build reverse-proxy URL paths dynamically with account information. |
-| Reverse proxy + header rules | 🟢 **Zero/low intrusion** | Resin can extract Account from original headers (for example `Authorization`) and bind IP automatically. |
-
-👉 **Fast integration script/prompt:**
-If you are a developer and want AI to help modify an existing project for native Resin sticky integration, use:
-
-- [doc/integration-prompt.md](doc/integration-prompt.md)
+```bash
+docker run -d \
+  --name resin \
+  --restart unless-stopped \
+  -e RESIN_AUTH_VERSION=V1 \
+  -e RESIN_ADMIN_TOKEN=your-admin-password \
+  -e RESIN_PROXY_TOKEN=your-proxy-token \
+  -e RESIN_LISTEN_ADDRESS=0.0.0.0 \
+  -e RESIN_PORT=2260 \
+  -p 2260:2260 \
+  -v $(pwd)/data/cache:/var/cache/resin \
+  -v $(pwd)/data/state:/var/lib/resin \
+  -v $(pwd)/data/log:/var/log/resin \
+  ghcr.io/jiujiu532/resin:latest
+```
 
 ---
 
-## Other Deployment Options
+### Option 3: Prebuilt Binary
 
-<details>
-<summary><b>Option 1: Run prebuilt binary</b></summary>
-<br>
-Go to the project's <a href="https://github.com/Resinat/Resin/releases">Release</a> page and download the package for your OS/architecture. After extraction, run the single binary <code>resin</code>.
+Download the archive for your OS/arch from [Releases](https://github.com/jiujiu532/Resin/releases) and extract the `resin` binary.
+
+**Linux / macOS:**
 
 ```bash
-RESIN_ADMIN_TOKEN=<admin-dashboard-password> \
+chmod +x resin
+
 RESIN_AUTH_VERSION=V1 \
-RESIN_PROXY_TOKEN=<proxy-password> \
-RESIN_STATE_DIR=./data/state \
-RESIN_CACHE_DIR=./data/cache \
-RESIN_LOG_DIR=./data/log \
+RESIN_ADMIN_TOKEN=your-admin-password \
+RESIN_PROXY_TOKEN=your-proxy-token \
 RESIN_LISTEN_ADDRESS=0.0.0.0 \
 RESIN_PORT=2260 \
-./resin
-```
-</details>
-
-<details>
-<summary><b>Option 2: Build from source</b></summary>
-<br>
-Prerequisites: Go 1.25+ and Node.js installed.
-
-```bash
-# 1. Clone Resin source
-git clone https://github.com/Resinat/Resin.git
-
-# 2. Build WebUI
-cd Resin/webui
-npm install && npm run build
-cd ..
-
-# 3. Build Resin core
-go build -tags "with_quic with_wireguard with_grpc with_utls" -o resin ./cmd/resin
-
-# 4. Run
-RESIN_ADMIN_TOKEN=<admin-dashboard-password> \
-RESIN_AUTH_VERSION=V1 \
-RESIN_PROXY_TOKEN=<proxy-password> \
 RESIN_STATE_DIR=./data/state \
 RESIN_CACHE_DIR=./data/cache \
 RESIN_LOG_DIR=./data/log \
-RESIN_LISTEN_ADDRESS=127.0.0.1 \
+./resin
+```
+
+**Windows (PowerShell):**
+
+```powershell
+$env:RESIN_AUTH_VERSION="V1"
+$env:RESIN_ADMIN_TOKEN="your-admin-password"
+$env:RESIN_PROXY_TOKEN="your-proxy-token"
+$env:RESIN_LISTEN_ADDRESS="0.0.0.0"
+$env:RESIN_PORT="2260"
+$env:RESIN_STATE_DIR=".\data\state"
+$env:RESIN_CACHE_DIR=".\data\cache"
+$env:RESIN_LOG_DIR=".\data\log"
+.\resin.exe
+```
+
+---
+
+### Option 4: Build from Source
+
+Requires Go 1.24+ and Node.js 22+.
+
+```bash
+git clone https://github.com/jiujiu532/Resin.git
+cd Resin
+
+# Build WebUI
+cd webui && npm ci && npm run build && cd ..
+
+# Build binary
+go build \
+  -tags "with_quic with_wireguard with_grpc with_utls" \
+  -o resin ./cmd/resin
+
+# Run
+RESIN_AUTH_VERSION=V1 \
+RESIN_ADMIN_TOKEN=your-admin-password \
+RESIN_PROXY_TOKEN=your-proxy-token \
 RESIN_PORT=2260 \
 ./resin
 ```
-</details>
+
+---
+
+### Environment Variables
+
+| Variable | Required | Description |
+| :--- | :---: | :--- |
+| `RESIN_AUTH_VERSION` | ✅ | Auth version. Use `V1` for new deployments. |
+| `RESIN_ADMIN_TOKEN` | ✅ | Web UI admin password. Set to `""` to disable auth. |
+| `RESIN_PROXY_TOKEN` | ✅ | Proxy auth token. Set to `""` to disable auth. |
+| `RESIN_PORT` | | Listen port. Default: `2260` |
+| `RESIN_LISTEN_ADDRESS` | | Listen address. Default: `0.0.0.0` |
+| `RESIN_STATE_DIR` | | State data directory. Default: `/var/lib/resin` |
+| `RESIN_CACHE_DIR` | | Cache directory. Default: `/var/cache/resin` |
+| `RESIN_LOG_DIR` | | Log directory. Default: `/var/log/resin` |
+
+---
+
+## 🟢 Basic Usage
+
+**HTTP forward proxy:**
+```bash
+curl -x http://127.0.0.1:2260 -U ":your-proxy-token" https://api.ipify.org
+```
+
+**SOCKS5 forward proxy (V1 only):**
+```bash
+curl --proxy socks5h://127.0.0.1:2260 -U "Default:your-proxy-token" https://api.ipify.org
+```
+
+**Reverse proxy:**
+```bash
+curl http://127.0.0.1:2260/your-proxy-token/./https/api.ipify.org
+```
+
+### Filter nodes by platform
+
+Create a Platform in the Web UI with region or regex filters, then specify it in the proxy auth:
+
+```bash
+curl -x http://127.0.0.1:2260 -U "MyPlatform:your-proxy-token" https://api.ipify.org
+```
+
+### Block a node (this fork)
+
+Open a node in the Node Pool page, pick a platform in the Ops section, and click **Block**. The node is immediately excluded from that platform's routing.
+
+---
+
+## 📖 Sticky Sessions
+
+Keep the same account on the same egress IP.
+
+**HTTP / SOCKS5 (V1 format: `Platform.Account:token`):**
+
+```bash
+curl -x http://127.0.0.1:2260 -U "Default.user_tom:your-proxy-token" https://api.ipify.org
+```
+
+**Reverse proxy with `X-Resin-Account` header (recommended for production):**
+
+```bash
+curl "http://127.0.0.1:2260/your-proxy-token/Default/https/api.example.com/v1/orders" \
+  -H "X-Resin-Account: user_tom"
+```
 
 ---
 
 ## 🛠️ FAQ
 
-- **Q: Startup fails with `RESIN_PROXY_TOKEN` undefined?**
-  - **A**: Even if you do not want a proxy password, you must explicitly set it to empty: `RESIN_PROXY_TOKEN=""`.
-- **Q: Startup fails with `RESIN_AUTH_VERSION` undefined?**
-  - **A**: Set it to `LEGACY_V0` or `V1`. For new deployments, use `V1`. For upgrades with legacy data, see [doc/v1.0.0-migration-guide.md](doc/v1.0.0-migration-guide.md).
-- **Q: Why can't my SOCKS5 client connect?**
-  - **A**: First confirm that you are running with `RESIN_AUTH_VERSION=V1`; SOCKS5 inbound is not enabled under `LEGACY_V0`. If `RESIN_PROXY_TOKEN` is non-empty, the client must send SOCKS5 username/password authentication. If it is explicitly set to an empty string, `NO AUTH` is also allowed.
-- **Q: How to write reverse-proxy paths for WebSocket (ws/wss)?**
-  - **A**: In the URL path, the protocol field must still be `http` or `https` (not `ws`/`wss`). Resin auto-detects and handles WebSocket upgrade.
+**Q: Startup fails with `RESIN_PROXY_TOKEN` undefined?**
+Even if you don't want a password, you must define it explicitly: `RESIN_PROXY_TOKEN=""`.
+
+**Q: Startup fails with `RESIN_AUTH_VERSION` undefined?**
+Set it to `V1` for new deployments. See the [migration guide](doc/v1.0.0-migration-guide.md) if upgrading.
+
+**Q: SOCKS5 client can't connect?**
+Confirm `RESIN_AUTH_VERSION=V1`. SOCKS5 is disabled in `LEGACY_V0` mode.
+
+**Q: How to use WebSocket with reverse proxy?**
+Use `http` or `https` in the path — not `ws`/`wss`. Resin handles the upgrade automatically.
+
+**Q: Does the node name regex filter support exclusion (`!`)?**
+No. Only region filters support `!` negation. Use the platform-level node blocklist to exclude specific nodes.
 
 ---
 
-## ⚠️ License and Disclaimer
+## ⚠️ Disclaimer
 
-- **License**: This project is licensed under the [MIT License](LICENSE).
-- **Use scope**: This project is provided for technical research and engineering practice in proxy scheduling and management. It does not constitute legal, compliance, audit, or security advice.
-- **Lawful use requirement**: You are responsible for ensuring your usage complies with applicable laws, regulations, target-service Terms of Service (ToS), and data-processing obligations, and for ensuring you have proper authorization for proxy nodes, target resources, and related data.
-- **Prohibited use**: You must not use this project for unauthorized access, control-evasion, fraud, attacks, abusive traffic generation, or other illegal or non-compliant activity.
-- **No warranty**: This project is provided on an "AS IS" basis, without express or implied warranties, including but not limited to merchantability, fitness for a particular purpose, and non-infringement.
-- **Limitation of liability**: To the maximum extent permitted by applicable law, authors and contributors are not liable for any direct, indirect, incidental, special, exemplary, or consequential damages arising from use of, or inability to use, this project.
+Licensed under [MIT](LICENSE). For technical research and engineering use only. Users are responsible for ensuring lawful and compliant usage.
