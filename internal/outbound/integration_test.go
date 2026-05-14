@@ -1,101 +1,102 @@
-package outbound_test
-
-import (
-	"encoding/json"
-	"net/netip"
-	"regexp"
-	"testing"
-	"time"
-
-	"github.com/jiujiu532/Resin/internal/node"
-	"github.com/jiujiu532/Resin/internal/outbound"
-	"github.com/jiujiu532/Resin/internal/platform"
-	"github.com/jiujiu532/Resin/internal/subscription"
-	"github.com/jiujiu532/Resin/internal/testutil"
-	"github.com/jiujiu532/Resin/internal/topology"
-)
-
-// TestEndToEnd_NodeEnterRoutableView verifies the full lifecycle:
-// node added to pool â†?EnsureNodeOutbound â†?outbound set â†?// latency recorded â†?egress IP set â†?platform filter passes â†?node in routable view.
-func TestEndToEnd_NodeEnterRoutableView(t *testing.T) {
-	subMgr := topology.NewSubscriptionManager()
-
-	// Create a subscription with the node.
-	rawOpts := json.RawMessage(`{"type":"e2e-test"}`)
-	hash := node.HashFromRawOptions(rawOpts)
-
-	// Use a no-op geo lookup (region filters empty â†?passes).
-	geoLookup := func(_ netip.Addr) string { return "US" }
-
-	pool := topology.NewGlobalNodePool(topology.PoolConfig{
-		SubLookup:              subMgr.Lookup,
-		GeoLookup:              geoLookup,
-		MaxLatencyTableEntries: 10,
-		MaxConsecutiveFailures: func() int { return 3 },
-		LatencyDecayWindow:     func() time.Duration { return 10 * time.Minute },
-	})
-
-	// Register a platform with no regex/region filters.
-	platCfg := platform.NewPlatform("test-plat-id", "test-plat", []*regexp.Regexp{}, []string{})
-	pool.RegisterPlatform(platCfg)
-
-	// Register subscription and set its managed nodes.
-	sub := subscription.NewSubscription("sub-1", "Test Sub", "https://example.com/sub", true, false)
-	subMgr.Register(sub)
-	managedNodes := subscription.NewManagedNodes()
-	managedNodes.StoreNode(hash, subscription.ManagedNode{Tags: []string{"tag1"}})
-	sub.SwapManagedNodes(managedNodes)
-
-	pool.AddNodeFromSub(hash, rawOpts, "sub-1")
-
-	// At this point, node is in pool but no outbound, no latency, no egress IP.
-	// Platform should NOT include it.
-	entry, ok := pool.GetEntry(hash)
-	if !ok {
-		t.Fatal("node not found in pool after AddNodeFromSub")
-	}
-	if entry.HasOutbound() {
-		t.Fatal("expected no outbound before EnsureNodeOutbound")
-	}
-
-	// Check platform does NOT contain the node yet.
-	plat, ok := pool.GetPlatform("test-plat-id")
-	if !ok {
-		t.Fatal("platform not found")
-	}
-	if plat.View().Contains(hash) {
-		t.Fatal("node should NOT be in routable view yet (no outbound/latency/egress)")
-	}
-
-	// Step 1: Create outbound.
-	obMgr := outbound.NewOutboundManager(pool, &testutil.StubOutboundBuilder{})
-	obMgr.EnsureNodeOutbound(hash)
-	if !entry.HasOutbound() {
-		t.Fatal("expected HasOutbound() == true after EnsureNodeOutbound")
-	}
-
-	// Step 2: Record latency (simulate a successful probe).
-	entry.LatencyTable.Update("cloudflare.com", 50*time.Millisecond, 10*time.Minute)
-
-	// Step 3: Set egress IP.
-	ip := netip.MustParseAddr("203.0.113.1")
-	entry.SetEgressIP(ip)
-	pool.RecordResult(hash, true)
-
-	// Step 4: Trigger platform re-evaluation.
-	pool.NotifyNodeDirty(hash)
-
-	// Now platform should include the node.
-	if !plat.View().Contains(hash) {
-		t.Fatal("node should be in routable view after outbound + latency + egress IP set")
-	}
-
-	// Step 5: Remove outbound.
-	obMgr.RemoveNodeOutbound(entry)
-	pool.NotifyNodeDirty(hash)
-
-	// After removing outbound, platform should exclude the node.
-	if plat.View().Contains(hash) {
-		t.Fatal("node should NOT be in routable view after outbound removed")
-	}
-}
+->p->a->c->k->a->g->e-> ->o->u->t->b->o->u->n->d->_->t->e->s->t->
+->
+->i->m->p->o->r->t-> ->(->
+->	->"->e->n->c->o->d->i->n->g->/->j->s->o->n->"->
+->	->"->n->e->t->/->n->e->t->i->p->"->
+->	->"->r->e->g->e->x->p->"->
+->	->"->t->e->s->t->i->n->g->"->
+->	->"->t->i->m->e->"->
+->
+->	->"->g->i->t->h->u->b->.->c->o->m->/->j->i->u->j->i->u->5->3->2->/->R->e->s->i->n->/->i->n->t->e->r->n->a->l->/->n->o->d->e->"->
+->	->"->g->i->t->h->u->b->.->c->o->m->/->j->i->u->j->i->u->5->3->2->/->R->e->s->i->n->/->i->n->t->e->r->n->a->l->/->o->u->t->b->o->u->n->d->"->
+->	->"->g->i->t->h->u->b->.->c->o->m->/->j->i->u->j->i->u->5->3->2->/->R->e->s->i->n->/->i->n->t->e->r->n->a->l->/->p->l->a->t->f->o->r->m->"->
+->	->"->g->i->t->h->u->b->.->c->o->m->/->j->i->u->j->i->u->5->3->2->/->R->e->s->i->n->/->i->n->t->e->r->n->a->l->/->s->u->b->s->c->r->i->p->t->i->o->n->"->
+->	->"->g->i->t->h->u->b->.->c->o->m->/->j->i->u->j->i->u->5->3->2->/->R->e->s->i->n->/->i->n->t->e->r->n->a->l->/->t->e->s->t->u->t->i->l->"->
+->	->"->g->i->t->h->u->b->.->c->o->m->/->j->i->u->j->i->u->5->3->2->/->R->e->s->i->n->/->i->n->t->e->r->n->a->l->/->t->o->p->o->l->o->g->y->"->
+->)->
+->
+->/->/-> ->T->e->s->t->E->n->d->T->o->E->n->d->_->N->o->d->e->E->n->t->e->r->R->o->u->t->a->b->l->e->V->i->e->w-> ->v->e->r->i->f->i->e->s-> ->t->h->e-> ->f->u->l->l-> ->l->i->f->e->c->y->c->l->e->:->
+->/->/-> ->n->o->d->e-> ->a->d->d->e->d-> ->t->o-> ->p->o->o->l-> ->-->>->?->E->n->s->u->r->e->N->o->d->e->O->u->t->b->o->u->n->d-> ->-->>->?->o->u->t->b->o->u->n->d-> ->s->e->t-> ->-->>->?->/->/-> ->l->a->t->e->n->c->y-> ->r->e->c->o->r->d->e->d-> ->-->>->?->e->g->r->e->s->s-> ->I->P-> ->s->e->t-> ->-->>->?->p->l->a->t->f->o->r->m-> ->f->i->l->t->e->r-> ->p->a->s->s->e->s-> ->-->>->?->n->o->d->e-> ->i->n-> ->r->o->u->t->a->b->l->e-> ->v->i->e->w->.->
+->f->u->n->c-> ->T->e->s->t->E->n->d->T->o->E->n->d->_->N->o->d->e->E->n->t->e->r->R->o->u->t->a->b->l->e->V->i->e->w->(->t-> ->*->t->e->s->t->i->n->g->.->T->)-> ->{->
+->	->s->u->b->M->g->r-> ->:->=-> ->t->o->p->o->l->o->g->y->.->N->e->w->S->u->b->s->c->r->i->p->t->i->o->n->M->a->n->a->g->e->r->(->)->
+->
+->	->/->/-> ->C->r->e->a->t->e-> ->a-> ->s->u->b->s->c->r->i->p->t->i->o->n-> ->w->i->t->h-> ->t->h->e-> ->n->o->d->e->.->
+->	->r->a->w->O->p->t->s-> ->:->=-> ->j->s->o->n->.->R->a->w->M->e->s->s->a->g->e->(->`->{->"->t->y->p->e->"->:->"->e->2->e->-->t->e->s->t->"->}->`->)->
+->	->h->a->s->h-> ->:->=-> ->n->o->d->e->.->H->a->s->h->F->r->o->m->R->a->w->O->p->t->i->o->n->s->(->r->a->w->O->p->t->s->)->
+->
+->	->/->/-> ->U->s->e-> ->a-> ->n->o->-->o->p-> ->g->e->o-> ->l->o->o->k->u->p-> ->(->r->e->g->i->o->n-> ->f->i->l->t->e->r->s-> ->e->m->p->t->y-> ->-->>->?->p->a->s->s->e->s->)->.->
+->	->g->e->o->L->o->o->k->u->p-> ->:->=-> ->f->u->n->c->(->_-> ->n->e->t->i->p->.->A->d->d->r->)-> ->s->t->r->i->n->g-> ->{-> ->r->e->t->u->r->n-> ->"->U->S->"-> ->}->
+->
+->	->p->o->o->l-> ->:->=-> ->t->o->p->o->l->o->g->y->.->N->e->w->G->l->o->b->a->l->N->o->d->e->P->o->o->l->(->t->o->p->o->l->o->g->y->.->P->o->o->l->C->o->n->f->i->g->{->
+->	->	->S->u->b->L->o->o->k->u->p->:-> -> -> -> -> -> -> -> -> -> -> -> -> -> ->s->u->b->M->g->r->.->L->o->o->k->u->p->,->
+->	->	->G->e->o->L->o->o->k->u->p->:-> -> -> -> -> -> -> -> -> -> -> -> -> -> ->g->e->o->L->o->o->k->u->p->,->
+->	->	->M->a->x->L->a->t->e->n->c->y->T->a->b->l->e->E->n->t->r->i->e->s->:-> ->1->0->,->
+->	->	->M->a->x->C->o->n->s->e->c->u->t->i->v->e->F->a->i->l->u->r->e->s->:-> ->f->u->n->c->(->)-> ->i->n->t-> ->{-> ->r->e->t->u->r->n-> ->3-> ->}->,->
+->	->	->L->a->t->e->n->c->y->D->e->c->a->y->W->i->n->d->o->w->:-> -> -> -> -> ->f->u->n->c->(->)-> ->t->i->m->e->.->D->u->r->a->t->i->o->n-> ->{-> ->r->e->t->u->r->n-> ->1->0-> ->*-> ->t->i->m->e->.->M->i->n->u->t->e-> ->}->,->
+->	->}->)->
+->
+->	->/->/-> ->R->e->g->i->s->t->e->r-> ->a-> ->p->l->a->t->f->o->r->m-> ->w->i->t->h-> ->n->o-> ->r->e->g->e->x->/->r->e->g->i->o->n-> ->f->i->l->t->e->r->s->.->
+->	->p->l->a->t->C->f->g-> ->:->=-> ->p->l->a->t->f->o->r->m->.->N->e->w->P->l->a->t->f->o->r->m->(->"->t->e->s->t->-->p->l->a->t->-->i->d->"->,-> ->"->t->e->s->t->-->p->l->a->t->"->,-> ->[->]->*->r->e->g->e->x->p->.->R->e->g->e->x->p->{->}->,-> ->[->]->s->t->r->i->n->g->{->}->)->
+->	->p->o->o->l->.->R->e->g->i->s->t->e->r->P->l->a->t->f->o->r->m->(->p->l->a->t->C->f->g->)->
+->
+->	->/->/-> ->R->e->g->i->s->t->e->r-> ->s->u->b->s->c->r->i->p->t->i->o->n-> ->a->n->d-> ->s->e->t-> ->i->t->s-> ->m->a->n->a->g->e->d-> ->n->o->d->e->s->.->
+->	->s->u->b-> ->:->=-> ->s->u->b->s->c->r->i->p->t->i->o->n->.->N->e->w->S->u->b->s->c->r->i->p->t->i->o->n->(->"->s->u->b->-->1->"->,-> ->"->T->e->s->t-> ->S->u->b->"->,-> ->"->h->t->t->p->s->:->/->/->e->x->a->m->p->l->e->.->c->o->m->/->s->u->b->"->,-> ->t->r->u->e->,-> ->f->a->l->s->e->)->
+->	->s->u->b->M->g->r->.->R->e->g->i->s->t->e->r->(->s->u->b->)->
+->	->m->a->n->a->g->e->d->N->o->d->e->s-> ->:->=-> ->s->u->b->s->c->r->i->p->t->i->o->n->.->N->e->w->M->a->n->a->g->e->d->N->o->d->e->s->(->)->
+->	->m->a->n->a->g->e->d->N->o->d->e->s->.->S->t->o->r->e->N->o->d->e->(->h->a->s->h->,-> ->s->u->b->s->c->r->i->p->t->i->o->n->.->M->a->n->a->g->e->d->N->o->d->e->{->T->a->g->s->:-> ->[->]->s->t->r->i->n->g->{->"->t->a->g->1->"->}->}->)->
+->	->s->u->b->.->S->w->a->p->M->a->n->a->g->e->d->N->o->d->e->s->(->m->a->n->a->g->e->d->N->o->d->e->s->)->
+->
+->	->p->o->o->l->.->A->d->d->N->o->d->e->F->r->o->m->S->u->b->(->h->a->s->h->,-> ->r->a->w->O->p->t->s->,-> ->"->s->u->b->-->1->"->)->
+->
+->	->/->/-> ->A->t-> ->t->h->i->s-> ->p->o->i->n->t->,-> ->n->o->d->e-> ->i->s-> ->i->n-> ->p->o->o->l-> ->b->u->t-> ->n->o-> ->o->u->t->b->o->u->n->d->,-> ->n->o-> ->l->a->t->e->n->c->y->,-> ->n->o-> ->e->g->r->e->s->s-> ->I->P->.->
+->	->/->/-> ->P->l->a->t->f->o->r->m-> ->s->h->o->u->l->d-> ->N->O->T-> ->i->n->c->l->u->d->e-> ->i->t->.->
+->	->e->n->t->r->y->,-> ->o->k-> ->:->=-> ->p->o->o->l->.->G->e->t->E->n->t->r->y->(->h->a->s->h->)->
+->	->i->f-> ->!->o->k-> ->{->
+->	->	->t->.->F->a->t->a->l->(->"->n->o->d->e-> ->n->o->t-> ->f->o->u->n->d-> ->i->n-> ->p->o->o->l-> ->a->f->t->e->r-> ->A->d->d->N->o->d->e->F->r->o->m->S->u->b->"->)->
+->	->}->
+->	->i->f-> ->e->n->t->r->y->.->H->a->s->O->u->t->b->o->u->n->d->(->)-> ->{->
+->	->	->t->.->F->a->t->a->l->(->"->e->x->p->e->c->t->e->d-> ->n->o-> ->o->u->t->b->o->u->n->d-> ->b->e->f->o->r->e-> ->E->n->s->u->r->e->N->o->d->e->O->u->t->b->o->u->n->d->"->)->
+->	->}->
+->
+->	->/->/-> ->C->h->e->c->k-> ->p->l->a->t->f->o->r->m-> ->d->o->e->s-> ->N->O->T-> ->c->o->n->t->a->i->n-> ->t->h->e-> ->n->o->d->e-> ->y->e->t->.->
+->	->p->l->a->t->,-> ->o->k-> ->:->=-> ->p->o->o->l->.->G->e->t->P->l->a->t->f->o->r->m->(->"->t->e->s->t->-->p->l->a->t->-->i->d->"->)->
+->	->i->f-> ->!->o->k-> ->{->
+->	->	->t->.->F->a->t->a->l->(->"->p->l->a->t->f->o->r->m-> ->n->o->t-> ->f->o->u->n->d->"->)->
+->	->}->
+->	->i->f-> ->p->l->a->t->.->V->i->e->w->(->)->.->C->o->n->t->a->i->n->s->(->h->a->s->h->)-> ->{->
+->	->	->t->.->F->a->t->a->l->(->"->n->o->d->e-> ->s->h->o->u->l->d-> ->N->O->T-> ->b->e-> ->i->n-> ->r->o->u->t->a->b->l->e-> ->v->i->e->w-> ->y->e->t-> ->(->n->o-> ->o->u->t->b->o->u->n->d->/->l->a->t->e->n->c->y->/->e->g->r->e->s->s->)->"->)->
+->	->}->
+->
+->	->/->/-> ->S->t->e->p-> ->1->:-> ->C->r->e->a->t->e-> ->o->u->t->b->o->u->n->d->.->
+->	->o->b->M->g->r-> ->:->=-> ->o->u->t->b->o->u->n->d->.->N->e->w->O->u->t->b->o->u->n->d->M->a->n->a->g->e->r->(->p->o->o->l->,-> ->&->t->e->s->t->u->t->i->l->.->S->t->u->b->O->u->t->b->o->u->n->d->B->u->i->l->d->e->r->{->}->)->
+->	->o->b->M->g->r->.->E->n->s->u->r->e->N->o->d->e->O->u->t->b->o->u->n->d->(->h->a->s->h->)->
+->	->i->f-> ->!->e->n->t->r->y->.->H->a->s->O->u->t->b->o->u->n->d->(->)-> ->{->
+->	->	->t->.->F->a->t->a->l->(->"->e->x->p->e->c->t->e->d-> ->H->a->s->O->u->t->b->o->u->n->d->(->)-> ->=->=-> ->t->r->u->e-> ->a->f->t->e->r-> ->E->n->s->u->r->e->N->o->d->e->O->u->t->b->o->u->n->d->"->)->
+->	->}->
+->
+->	->/->/-> ->S->t->e->p-> ->2->:-> ->R->e->c->o->r->d-> ->l->a->t->e->n->c->y-> ->(->s->i->m->u->l->a->t->e-> ->a-> ->s->u->c->c->e->s->s->f->u->l-> ->p->r->o->b->e->)->.->
+->	->e->n->t->r->y->.->L->a->t->e->n->c->y->T->a->b->l->e->.->U->p->d->a->t->e->(->"->c->l->o->u->d->f->l->a->r->e->.->c->o->m->"->,-> ->5->0->*->t->i->m->e->.->M->i->l->l->i->s->e->c->o->n->d->,-> ->1->0->*->t->i->m->e->.->M->i->n->u->t->e->)->
+->
+->	->/->/-> ->S->t->e->p-> ->3->:-> ->S->e->t-> ->e->g->r->e->s->s-> ->I->P->.->
+->	->i->p-> ->:->=-> ->n->e->t->i->p->.->M->u->s->t->P->a->r->s->e->A->d->d->r->(->"->2->0->3->.->0->.->1->1->3->.->1->"->)->
+->	->e->n->t->r->y->.->S->e->t->E->g->r->e->s->s->I->P->(->i->p->)->
+->	->p->o->o->l->.->R->e->c->o->r->d->R->e->s->u->l->t->(->h->a->s->h->,-> ->t->r->u->e->)->
+->
+->	->/->/-> ->S->t->e->p-> ->4->:-> ->T->r->i->g->g->e->r-> ->p->l->a->t->f->o->r->m-> ->r->e->-->e->v->a->l->u->a->t->i->o->n->.->
+->	->p->o->o->l->.->N->o->t->i->f->y->N->o->d->e->D->i->r->t->y->(->h->a->s->h->)->
+->
+->	->/->/-> ->N->o->w-> ->p->l->a->t->f->o->r->m-> ->s->h->o->u->l->d-> ->i->n->c->l->u->d->e-> ->t->h->e-> ->n->o->d->e->.->
+->	->i->f-> ->!->p->l->a->t->.->V->i->e->w->(->)->.->C->o->n->t->a->i->n->s->(->h->a->s->h->)-> ->{->
+->	->	->t->.->F->a->t->a->l->(->"->n->o->d->e-> ->s->h->o->u->l->d-> ->b->e-> ->i->n-> ->r->o->u->t->a->b->l->e-> ->v->i->e->w-> ->a->f->t->e->r-> ->o->u->t->b->o->u->n->d-> ->+-> ->l->a->t->e->n->c->y-> ->+-> ->e->g->r->e->s->s-> ->I->P-> ->s->e->t->"->)->
+->	->}->
+->
+->	->/->/-> ->S->t->e->p-> ->5->:-> ->R->e->m->o->v->e-> ->o->u->t->b->o->u->n->d->.->
+->	->o->b->M->g->r->.->R->e->m->o->v->e->N->o->d->e->O->u->t->b->o->u->n->d->(->e->n->t->r->y->)->
+->	->p->o->o->l->.->N->o->t->i->f->y->N->o->d->e->D->i->r->t->y->(->h->a->s->h->)->
+->
+->	->/->/-> ->A->f->t->e->r-> ->r->e->m->o->v->i->n->g-> ->o->u->t->b->o->u->n->d->,-> ->p->l->a->t->f->o->r->m-> ->s->h->o->u->l->d-> ->e->x->c->l->u->d->e-> ->t->h->e-> ->n->o->d->e->.->
+->	->i->f-> ->p->l->a->t->.->V->i->e->w->(->)->.->C->o->n->t->a->i->n->s->(->h->a->s->h->)-> ->{->
+->	->	->t->.->F->a->t->a->l->(->"->n->o->d->e-> ->s->h->o->u->l->d-> ->N->O->T-> ->b->e-> ->i->n-> ->r->o->u->t->a->b->l->e-> ->v->i->e->w-> ->a->f->t->e->r-> ->o->u->t->b->o->u->n->d-> ->r->e->m->o->v->e->d->"->)->
+->	->}->
+->}->
+->
