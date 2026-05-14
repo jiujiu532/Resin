@@ -223,7 +223,7 @@ func HandlePreviewFilter(cp *service.ControlPlaneService) http.HandlerFunc {
 	}
 }
 
-// HandleListBlockedNodes  GET /api/v1/platforms/{id}/blocked-nodes func HandleListBlockedNodes(cp *service.ControlPlaneService) http.HandlerFunc {
+// HandleListBlockedNodes 返回 GET /api/v1/platforms/{id}/blocked-nodes 的处理器?func HandleListBlockedNodes(cp *service.ControlPlaneService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, ok := requireUUIDPathParam(w, r, "id", "platform_id")
 		if !ok {
@@ -238,7 +238,7 @@ func HandlePreviewFilter(cp *service.ControlPlaneService) http.HandlerFunc {
 	}
 }
 
-// HandleBlockNode  POST /api/v1/platforms/{id}/blocked-nodes func HandleBlockNode(cp *service.ControlPlaneService) http.HandlerFunc {
+// HandleBlockNode 返回 POST /api/v1/platforms/{id}/blocked-nodes 的处理器?func HandleBlockNode(cp *service.ControlPlaneService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, ok := requireUUIDPathParam(w, r, "id", "platform_id")
 		if !ok {
@@ -264,7 +264,7 @@ func HandlePreviewFilter(cp *service.ControlPlaneService) http.HandlerFunc {
 	}
 }
 
-// HandleUnblockNode  DELETE /api/v1/platforms/{id}/blocked-nodes/{hash} func HandleUnblockNode(cp *service.ControlPlaneService) http.HandlerFunc {
+// HandleUnblockNode 返回 DELETE /api/v1/platforms/{id}/blocked-nodes/{hash} 的处理器?func HandleUnblockNode(cp *service.ControlPlaneService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, ok := requireUUIDPathParam(w, r, "id", "platform_id")
 		if !ok {

@@ -190,7 +190,7 @@ func (s *Service) Start() error {
 			}()
 		}
 	} else if os.IsNotExist(err) {
-		// No local database at all download immediately in background.
+		// No local database at all ?download immediately in background.
 		log.Println("[geoip] no local database found, triggering background download")
 		go func() {
 			if err := s.UpdateNow(); err != nil {
@@ -205,13 +205,13 @@ func (s *Service) Start() error {
 }
 
 // isStale returns true if the file's mtime is older than the expected
-// cron schedule interval. Uses 2 the gap between two consecutive cron
+// cron schedule interval. Uses 2× the gap between two consecutive cron
 // firings to tolerate jitter. Falls back to 32 days if the schedule
 // cannot be determined.
 func (s *Service) isStale(modTime time.Time) bool {
 	entry := s.cron.Entry(s.cronEntryID)
 	if entry.ID == 0 || entry.Schedule == nil {
-		// Cron not configured fall back to conservative default.
+		// Cron not configured ?fall back to conservative default.
 		return time.Since(modTime) > 32*24*time.Hour
 	}
 
@@ -224,7 +224,7 @@ func (s *Service) isStale(modTime time.Time) bool {
 		interval = 32 * 24 * time.Hour
 	}
 
-	// Stale if mtime is older than 2 the interval.
+	// Stale if mtime is older than 2× the interval.
 	return time.Since(modTime) > 2*interval
 }
 
@@ -351,7 +351,7 @@ func (s *Service) UpdateNow() error {
 		os.Remove(tmpPath) // no-op if already renamed
 	}()
 
-	// 4. Verify SHA256 mandatory.
+	// 4. Verify SHA256 ?mandatory.
 	if err := VerifySHA256(tmpPath, expectedHash); err != nil {
 		return err
 	}

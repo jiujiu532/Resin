@@ -1,4 +1,4 @@
-// Package topology coordinates the subscription node pool platform view pipeline.
+// Package topology coordinates the subscription ?node pool ?platform view pipeline.
 // It owns the GlobalNodePool, PlatformManager, and SubscriptionManager,
 // breaking import cycles between the leaf packages (node, subscription, platform).
 package topology
@@ -30,10 +30,10 @@ type GlobalNodePool struct {
 	platformByID   map[string]*platform.Platform // id -> platform
 	platformByName map[string]*platform.Platform // name -> platform
 
-	// Subscription lookup injected by SubscriptionManager.
+	// Subscription lookup ?injected by SubscriptionManager.
 	subLookup func(subID string) *subscription.Subscription
 
-	// GeoIP lookup injected at construction.
+	// GeoIP lookup ?injected at construction.
 	geoLookup platform.GeoLookupFunc
 
 	// Persistence callbacks (optional, nil in tests without persistence).
@@ -598,7 +598,7 @@ func (p *GlobalNodePool) RecordLatency(hash node.Hash, rawTarget string, latency
 	wasEmpty, evictedDomain, evicted := entry.LatencyTable.UpdateClassified(domain, *latency, decayWindow, isAuthority)
 
 	// If the table transitioned from empty to non-empty, the node might
-	// now satisfy the HasLatency filter notify platforms.
+	// now satisfy the HasLatency filter ?notify platforms.
 	if wasEmpty {
 		p.notifyAllPlatformsDirty(hash)
 	}

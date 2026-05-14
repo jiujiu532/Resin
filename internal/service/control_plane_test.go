@@ -39,9 +39,9 @@ func TestHeaderTokenValid(t *testing.T) {
 		{"Header Name", false},      // space not allowed
 		{"Header\tName", false},     // tab not allowed
 		{"Header:Name", false},      // colon not allowed
-		{", false},              // non-ASCII
-		{"", false},                // non-ASCII rune whose low byte is ASCII 'A'
-		{", false},                // fullwidth ASCII confusable (U+FF21)
+		{"日本?, false},              // non-ASCII
+		{"Ł", false},                // non-ASCII rune whose low byte is ASCII 'A'
+		{"?, false},                // fullwidth ASCII confusable (U+FF21)
 		{"X-Header(1)", false},      // parentheses not allowed
 		{"X-Header[1]", false},      // brackets not allowed
 		{"Header\"Quoted\"", false}, // double quotes not allowed

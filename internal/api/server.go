@@ -85,7 +85,7 @@ func NewServerWithAddress(
 		authed.Handle("POST /api/v1/platforms/{id}/actions/reset-to-default", HandleResetPlatform(cp))
 		authed.Handle("POST /api/v1/platforms/{id}/actions/rebuild-routable-view", HandleRebuildPlatform(cp))
 
-		// 		authed.Handle("GET /api/v1/platforms/{id}/blocked-nodes", HandleListBlockedNodes(cp))
+		// 平台级节点黑名单?		authed.Handle("GET /api/v1/platforms/{id}/blocked-nodes", HandleListBlockedNodes(cp))
 		authed.Handle("POST /api/v1/platforms/{id}/blocked-nodes", HandleBlockNode(cp))
 		authed.Handle("DELETE /api/v1/platforms/{id}/blocked-nodes/{hash}", HandleUnblockNode(cp))
 

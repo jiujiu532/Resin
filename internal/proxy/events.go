@@ -53,7 +53,7 @@ type RequestLogEntry struct {
 	TargetHost      string
 	TargetURL       string
 	NodeHash        string
-	NodeTag         string // display tag: "<Subscription>/<Tag>" (DESIGN.md 601)
+	NodeTag         string // display tag: "<Subscription>/<Tag>" (DESIGN.md §601)
 	EgressIP        string
 	DurationNs      int64
 	NetOK           bool

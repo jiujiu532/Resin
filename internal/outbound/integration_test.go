@@ -16,7 +16,7 @@ import (
 )
 
 // TestEndToEnd_NodeEnterRoutableView verifies the full lifecycle:
-// node added to pool ->?EnsureNodeOutbound ->?outbound set ->?// latency recorded ->?egress IP set ->?platform filter passes ->?node in routable view.
+// node added to pool ?EnsureNodeOutbound ?outbound set ?// latency recorded ?egress IP set ?platform filter passes ?node in routable view.
 func TestEndToEnd_NodeEnterRoutableView(t *testing.T) {
 	subMgr := topology.NewSubscriptionManager()
 
@@ -24,7 +24,7 @@ func TestEndToEnd_NodeEnterRoutableView(t *testing.T) {
 	rawOpts := json.RawMessage(`{"type":"e2e-test"}`)
 	hash := node.HashFromRawOptions(rawOpts)
 
-	// Use a no-op geo lookup (region filters empty ->?passes).
+	// Use a no-op geo lookup (region filters empty ?passes).
 	geoLookup := func(_ netip.Addr) string { return "US" }
 
 	pool := topology.NewGlobalNodePool(topology.PoolConfig{

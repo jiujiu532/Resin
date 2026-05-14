@@ -748,15 +748,15 @@ func (s *ControlPlaneService) PreviewFilter(req PreviewFilterRequest) ([]NodeSum
 }
 
 // ------------------------------------------------------------------
-// 
+// 平台级节点黑名单
 // ------------------------------------------------------------------
 
-// BlockedNodeResponse API type BlockedNodeResponse struct {
+// BlockedNodeResponse 是黑名单节点?API 响应?type BlockedNodeResponse struct {
 	NodeHash  string `json:"node_hash"`
 	DisplayTag string `json:"display_tag,omitempty"`
 }
 
-// ListBlockedNodes func (s *ControlPlaneService) ListBlockedNodes(platformID string) ([]BlockedNodeResponse, error) {
+// ListBlockedNodes 返回平台黑名单中的节点列表?func (s *ControlPlaneService) ListBlockedNodes(platformID string) ([]BlockedNodeResponse, error) {
 	mp, err := s.getPlatformModel(platformID)
 	if err != nil {
 		return nil, err
@@ -764,7 +764,7 @@ func (s *ControlPlaneService) PreviewFilter(req PreviewFilterRequest) ([]NodeSum
 	result := make([]BlockedNodeResponse, 0, len(mp.BlockedNodeHashes))
 	for _, hex := range mp.BlockedNodeHashes {
 		resp := BlockedNodeResponse{NodeHash: hex}
-		//  hash tag		if h, parseErr := node.ParseHex(hex); parseErr == nil {
+		// 尝试解析 hash 并获取展?tag?		if h, parseErr := node.ParseHex(hex); parseErr == nil {
 			if s.Pool != nil {
 				resp.DisplayTag = s.Pool.ResolveNodeDisplayTag(h)
 			}
@@ -774,8 +774,8 @@ func (s *ControlPlaneService) PreviewFilter(req PreviewFilterRequest) ([]NodeSum
 	return result, nil
 }
 
-// BlockNode func (s *ControlPlaneService) BlockNode(platformID, nodeHash string) (*PlatformResponse, error) {
-	//  hash 	if _, err := node.ParseHex(nodeHash); err != nil {
+// BlockNode 将节点加入平台黑名单，并触发可路由视图重建?func (s *ControlPlaneService) BlockNode(platformID, nodeHash string) (*PlatformResponse, error) {
+	// 校验 hash 格式?	if _, err := node.ParseHex(nodeHash); err != nil {
 		return nil, invalidArg("node_hash: invalid hex format")
 	}
 
@@ -784,7 +784,7 @@ func (s *ControlPlaneService) PreviewFilter(req PreviewFilterRequest) ([]NodeSum
 		return nil, err
 	}
 
-	// 	for _, h := range mp.BlockedNodeHashes {
+	// 幂等：已在黑名单则直接返回?	for _, h := range mp.BlockedNodeHashes {
 		if h == nodeHash {
 			r := s.withRoutableNodeCount(platformToResponse(*mp))
 			return &r, nil
@@ -798,7 +798,7 @@ func (s *ControlPlaneService) PreviewFilter(req PreviewFilterRequest) ([]NodeSum
 		return nil, internal("persist platform blocked nodes", err)
 	}
 
-	// 	cfg := platformConfigFromModel(*mp)
+	// 更新运行时平台?	cfg := platformConfigFromModel(*mp)
 	plat, err2 := cfg.toRuntime(platformID)
 	if err2 != nil {
 		return nil, internal("build platform runtime", err2)
@@ -811,7 +811,7 @@ func (s *ControlPlaneService) PreviewFilter(req PreviewFilterRequest) ([]NodeSum
 	return &r, nil
 }
 
-// UnblockNode func (s *ControlPlaneService) UnblockNode(platformID, nodeHash string) (*PlatformResponse, error) {
+// UnblockNode 将节点从平台黑名单移除，并触发可路由视图重建?func (s *ControlPlaneService) UnblockNode(platformID, nodeHash string) (*PlatformResponse, error) {
 	if _, err := node.ParseHex(nodeHash); err != nil {
 		return nil, invalidArg("node_hash: invalid hex format")
 	}

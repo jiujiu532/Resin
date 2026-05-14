@@ -126,7 +126,7 @@ func TestPlatform_EvaluateNode_RegexFilter(t *testing.T) {
 		t.Fatal("node matching regex should be routable")
 	}
 
-	// Now with a "jp" filter should NOT match.
+	// Now with a "jp" filter ?should NOT match.
 	p2 := NewPlatform("p2", "Test", []*regexp.Regexp{regexp.MustCompile("^jp")}, nil)
 	p2.FullRebuild(func(fn func(node.Hash, *node.NodeEntry) bool) {
 		fn(h, entry)
@@ -150,7 +150,7 @@ func TestPlatform_EvaluateNode_RegionFilter(t *testing.T) {
 		t.Fatal("node in allowed region should be routable")
 	}
 
-	// Region filter "jp" node has US egress, should fail.
+	// Region filter "jp" ?node has US egress, should fail.
 	p2 := NewPlatform("p2", "Test", nil, []string{"jp"})
 	p2.FullRebuild(func(fn func(node.Hash, *node.NodeEntry) bool) {
 		fn(h, entry)
@@ -165,7 +165,7 @@ func TestPlatform_EvaluateNode_RegionFilter_NoEgressIP(t *testing.T) {
 	p := NewPlatform("p1", "Test", nil, []string{"us"})
 	h := makeHash(`{"type":"ss"}`)
 	entry := makeFullyRoutableEntry(h, "sub1")
-	// Don't set egress IP clear it.
+	// Don't set egress IP ?clear it.
 	entry.SetEgressIP(netip.Addr{})
 
 	p.FullRebuild(func(fn func(node.Hash, *node.NodeEntry) bool) {
@@ -293,27 +293,27 @@ func TestPlatform_NotifyDirty_AddRemove(t *testing.T) {
 		return e, ok
 	}
 
-	// Initially empty add via NotifyDirty.
+	// Initially empty ?add via NotifyDirty.
 	p.NotifyDirty(h, getEntry, alwaysLookup, usGeoLookup)
 	if p.View().Size() != 1 {
 		t.Fatal("NotifyDirty should add passing node")
 	}
 
-	// Circuit-break NotifyDirty removes.
+	// Circuit-break ?NotifyDirty removes.
 	entry.CircuitOpenSince.Store(time.Now().UnixNano())
 	p.NotifyDirty(h, getEntry, alwaysLookup, usGeoLookup)
 	if p.View().Size() != 0 {
 		t.Fatal("NotifyDirty should remove circuit-broken node")
 	}
 
-	// Recover NotifyDirty re-adds.
+	// Recover ?NotifyDirty re-adds.
 	entry.CircuitOpenSince.Store(0)
 	p.NotifyDirty(h, getEntry, alwaysLookup, usGeoLookup)
 	if p.View().Size() != 1 {
 		t.Fatal("NotifyDirty should re-add recovered node")
 	}
 
-	// Delete from pool NotifyDirty removes.
+	// Delete from pool ?NotifyDirty removes.
 	delete(entryStore, h)
 	p.NotifyDirty(h, getEntry, alwaysLookup, usGeoLookup)
 	if p.View().Size() != 0 {
@@ -338,7 +338,7 @@ func TestPlatform_FullRebuild_ClearsOld(t *testing.T) {
 		t.Fatalf("expected 2, got %d", p.View().Size())
 	}
 
-	// Second rebuild with only 1 node old entries cleared.
+	// Second rebuild with only 1 node ?old entries cleared.
 	p.FullRebuild(func(fn func(node.Hash, *node.NodeEntry) bool) {
 		fn(h1, e1)
 	}, alwaysLookup, usGeoLookup)

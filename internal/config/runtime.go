@@ -33,7 +33,7 @@ type RuntimeConfig struct {
 }
 
 // NewDefaultRuntimeConfig returns a RuntimeConfig populated with the default
-// values specified in DESIGN.md .
+// values specified in DESIGN.md §运行时全局设置项.
 func NewDefaultRuntimeConfig() *RuntimeConfig {
 	return &RuntimeConfig{
 		RequestLogEnabled:                  true,

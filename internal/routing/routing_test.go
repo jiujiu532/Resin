@@ -18,7 +18,7 @@ import (
 	"github.com/jiujiu532/Resin/internal/topology"
 )
 
-//  helpers 
+// ── helpers ─────────────────────────────────────────────────────
 
 const platID = "test-plat"
 const platName = "TestPlat"
@@ -97,13 +97,13 @@ func makeRouter(pool *topology.GlobalNodePool, events *[]routing.LeaseEvent) *ro
 	})
 }
 
-//  randomRoute tests 
+// ── randomRoute tests ───────────────────────────────────────────
 
 func TestRandomRoute_EmptyView(t *testing.T) {
 	pool, _ := setupPool(t)
 	router := makeRouter(pool, nil)
 
-	// No nodes ErrNoAvailableNodes.
+	// No nodes ?ErrNoAvailableNodes.
 	_, err := router.RouteRequest(platName, "", "example.com")
 	if err == nil {
 		t.Fatal("expected error for empty view")
@@ -152,7 +152,7 @@ func TestRandomRoute_MultipleNodes(t *testing.T) {
 	}
 }
 
-//  sticky lease tests 
+// ── sticky lease tests ──────────────────────────────────────────
 
 func TestStickyLease_CreateAndHit(t *testing.T) {
 	pool, subMgr := setupPool(t)
@@ -171,7 +171,7 @@ func TestStickyLease_CreateAndHit(t *testing.T) {
 		t.Fatal("first request should create lease")
 	}
 
-	// Second request should hit sticky lease same node.
+	// Second request should hit sticky lease ?same node.
 	res2, err := router.RouteRequest(platName, "user-A", "example.com")
 	if err != nil {
 		t.Fatalf("second route: %v", err)
@@ -237,7 +237,7 @@ func TestDeleteLease_EmitsLeaseRemoveWithLifetimeFields(t *testing.T) {
 	}
 }
 
-//  lease expiry test 
+// ── lease expiry test ───────────────────────────────────────────
 
 func TestStickyLease_Expiry(t *testing.T) {
 	pool, subMgr := setupPool(t)
@@ -286,7 +286,7 @@ func TestStickyLease_Expiry(t *testing.T) {
 	}
 }
 
-//  lease cleaner test 
+// ── lease cleaner test ──────────────────────────────────────────
 
 func TestLeaseCleaner_SweepExpired(t *testing.T) {
 	pool, subMgr := setupPool(t)
@@ -326,12 +326,12 @@ func TestLeaseCleaner_SweepExpired(t *testing.T) {
 	}
 	if !foundExpire {
 		// The expiry may have been detected by the RouteRequest call itself
-		// (path A.Expiry check). That's fine the cleaner is for un-accessed leases.
+		// (path A.Expiry check). That's fine ?the cleaner is for un-accessed leases.
 		t.Log("LeaseExpire event was detected by RouteRequest (not cleaner sweep), which is expected for accessed leases")
 	}
 }
 
-//  RestoreLeases test 
+// ── RestoreLeases test ──────────────────────────────────────────
 
 func TestRestoreLeases(t *testing.T) {
 	pool, subMgr := setupPool(t)
@@ -391,7 +391,7 @@ func TestRestoreLeases(t *testing.T) {
 	}
 }
 
-//  Default platform fallback test 
+// ── Default platform fallback test ──────────────────────────────
 
 func TestRouteRequest_DefaultPlatform(t *testing.T) {
 	pool, subMgr := setupPool(t)
@@ -427,7 +427,7 @@ func TestRouteRequest_PlatformNotFound(t *testing.T) {
 	}
 }
 
-//  P2C scoring favors idle IP 
+// ── P2C scoring favors idle IP ──────────────────────────────────
 
 func TestP2C_FavorsIdleIP(t *testing.T) {
 	pool, subMgr := setupPool(t)
@@ -462,7 +462,7 @@ func TestP2C_FavorsIdleIP(t *testing.T) {
 	}
 }
 
-//  Concurrent route requests 
+// ── Concurrent route requests ───────────────────────────────────
 
 func TestRouteRequest_ConcurrentSafety(t *testing.T) {
 	pool, subMgr := setupPool(t)
@@ -483,7 +483,7 @@ func TestRouteRequest_ConcurrentSafety(t *testing.T) {
 	wg.Wait()
 }
 
-//  RestoreLeases helper 
+// ── RestoreLeases helper ────────────────────────────────────────
 
 // Check if model.Lease type matches what Router.RestoreLeases expects.
 func init() {
@@ -491,7 +491,7 @@ func init() {
 	_ = []model.Lease{}
 }
 
-//  Utility: check RestoreLeases exists 
+// ── Utility: check RestoreLeases exists ─────────────────────────
 
 func TestRestoreLeasesExists(t *testing.T) {
 	pool, _ := setupPool(t)

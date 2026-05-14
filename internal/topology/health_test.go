@@ -50,14 +50,14 @@ func TestRecordResult_CircuitBreak(t *testing.T) {
 		t.Fatal("node should recover after first success")
 	}
 
-	// 2 failures not yet broken.
+	// 2 failures ?not yet broken.
 	pool.RecordResult(h, false)
 	pool.RecordResult(h, false)
 	if entry.IsCircuitOpen() {
 		t.Fatal("should not be circuit-open after 2 failures")
 	}
 
-	// 3rd failure circuit opens.
+	// 3rd failure ?circuit opens.
 	pool.RecordResult(h, false)
 	if !entry.IsCircuitOpen() {
 		t.Fatal("should be circuit-open after 3 failures")
@@ -79,7 +79,7 @@ func TestRecordResult_Recovery(t *testing.T) {
 		t.Fatal("should be circuit open")
 	}
 
-	// Success resets.
+	// Success ?resets.
 	pool.RecordResult(h, true)
 	if entry.IsCircuitOpen() {
 		t.Fatal("should not be circuit-open after success")
@@ -180,14 +180,14 @@ func TestRecordResult_CircuitBreak_RemovesFromView(t *testing.T) {
 		t.Fatal("node should be in view initially")
 	}
 
-	// Circuit break remove from view.
+	// Circuit break ?remove from view.
 	pool.RecordResult(h, false)
 	pool.RecordResult(h, false)
 	if plat.View().Size() != 0 {
 		t.Fatal("circuit-broken node should be removed from view")
 	}
 
-	// Recover back in view.
+	// Recover ?back in view.
 	pool.RecordResult(h, true)
 	if plat.View().Size() != 1 {
 		t.Fatal("recovered node should be back in view")
@@ -201,7 +201,7 @@ func TestRecordLatency_NormalizesDomain(t *testing.T) {
 	sub := subMgr.Lookup("s1")
 	h := addTestNode(pool, sub, `{"type":"ss","n":"lat"}`)
 
-	// Pass raw target with subdomain+port should normalize to eTLD+1.
+	// Pass raw target with subdomain+port ?should normalize to eTLD+1.
 	latency := 100 * time.Millisecond
 	pool.RecordLatency(h, "www.example.com:443", &latency)
 
@@ -231,7 +231,7 @@ func TestRecordLatency_FirstRecord_PlatformDirty(t *testing.T) {
 
 	h := addTestNode(pool, sub, `{"type":"ss","n":"first"}`)
 
-	// First record wasEmpty=true platform dirty.
+	// First record ?wasEmpty=true ?platform dirty.
 	latency := 50 * time.Millisecond
 	pool.RecordLatency(h, "example.com", &latency)
 	if latencyCBCount.Load() != 1 {
@@ -376,7 +376,7 @@ func TestUpdateNodeEgressIP_Change(t *testing.T) {
 		t.Fatalf("expected callback on same IP attempt, got %d", dynamicCount.Load())
 	}
 
-	// Different IP callback.
+	// Different IP ?callback.
 	ip2 := netip.MustParseAddr("5.6.7.8")
 	pool.UpdateNodeEgressIP(h, &ip2, nil)
 	if dynamicCount.Load() != 3 {

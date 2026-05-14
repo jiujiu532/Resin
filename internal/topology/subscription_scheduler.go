@@ -233,7 +233,7 @@ func (s *SubscriptionScheduler) UpdateSubscription(sub *subscription.Subscriptio
 		}
 	}
 
-	// 4. Diff, swap, add/remove under lock.
+	// 4. Diff, swap, add/remove ?under lock.
 	applied := false
 	sub.WithOpLock(func() {
 		// If refresh-input config changed while this attempt was in-flight, discard.

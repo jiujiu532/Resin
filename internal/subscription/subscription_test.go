@@ -159,12 +159,12 @@ func TestDiffHashes_Empty(t *testing.T) {
 	// All new.
 	added, kept, removed := DiffHashes(empty, full)
 	if len(added) != 1 || len(kept) != 0 || len(removed) != 0 {
-		t.Fatalf("empty->full: added=%d kept=%d removed=%d", len(added), len(kept), len(removed))
+		t.Fatalf("empty→full: added=%d kept=%d removed=%d", len(added), len(kept), len(removed))
 	}
 
 	// All removed.
 	added, kept, removed = DiffHashes(full, empty)
 	if len(added) != 0 || len(kept) != 0 || len(removed) != 1 {
-		t.Fatalf("full->empty: added=%d kept=%d removed=%d", len(added), len(kept), len(removed))
+		t.Fatalf("full→empty: added=%d kept=%d removed=%d", len(added), len(kept), len(removed))
 	}
 }

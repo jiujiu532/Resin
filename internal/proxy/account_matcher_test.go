@@ -42,19 +42,19 @@ func TestAccountMatcher_LongestPrefix(t *testing.T) {
 		{URLPrefix: "api.example.com/v1/admin", Headers: mustHeaders(`["x-admin-key"]`)},
 	})
 
-	// /v1/admin/users longest match is api.example.com/v1/admin
+	// /v1/admin/users ?longest match is api.example.com/v1/admin
 	h := m.Match("api.example.com", "/v1/admin/users")
 	if len(h) != 1 || h[0] != "x-admin-key" {
 		t.Fatalf("expected [x-admin-key], got %v", h)
 	}
 
-	// /v1/other longest match is api.example.com/v1
+	// /v1/other ?longest match is api.example.com/v1
 	h = m.Match("api.example.com", "/v1/other")
 	if len(h) != 1 || h[0] != "x-api-key" {
 		t.Fatalf("expected [x-api-key], got %v", h)
 	}
 
-	// /other longest match is api.example.com
+	// /other ?longest match is api.example.com
 	h = m.Match("api.example.com", "/other")
 	if len(h) != 1 || h[0] != "Authorization" {
 		t.Fatalf("expected [Authorization], got %v", h)
@@ -73,7 +73,7 @@ func TestAccountMatcher_WildcardFallback(t *testing.T) {
 		t.Fatalf("expected [x-api-key], got %v", h)
 	}
 
-	// Unknown domain wildcard.
+	// Unknown domain ?wildcard.
 	h = m.Match("unknown.com", "/anything")
 	if len(h) != 2 || h[0] != "Authorization" || h[1] != "x-api-key" {
 		t.Fatalf("expected [Authorization, x-api-key], got %v", h)
@@ -284,7 +284,7 @@ func TestExtractAccountFromHeaders_FirstWins(t *testing.T) {
 	r.Header.Set("Authorization", "account-auth")
 	r.Header.Set("x-api-key", "account-key")
 
-	// Both headers present Authorization (first in list) wins.
+	// Both headers present ?Authorization (first in list) wins.
 	account := extractAccountFromHeaders(r, []string{"Authorization", "x-api-key"})
 	if account != "account-auth" {
 		t.Fatalf("expected account-auth, got %q", account)

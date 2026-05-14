@@ -32,7 +32,7 @@ type ProbeConfig struct {
 	// Fetcher executes HTTP via node hash. Injectable for testing.
 	Fetcher Fetcher
 
-	// Interval thresholds closures for hot-reload from RuntimeConfig.
+	// Interval thresholds ?closures for hot-reload from RuntimeConfig.
 	MaxEgressTestInterval           func() time.Duration
 	MaxLatencyTestInterval          func() time.Duration
 	MaxAuthorityLatencyTestInterval func() time.Duration

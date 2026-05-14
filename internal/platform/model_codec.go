@@ -69,7 +69,7 @@ func NewConfiguredPlatform(
 	plat.ReverseProxyFixedAccountHeaders = append([]string(nil), fixedHeaders...)
 	plat.AllocationPolicy = ParseAllocationPolicy(allocationPolicy)
 
-	// hash	if len(blockedNodeHashes) > 0 {
+	// 解析黑名?hash?	if len(blockedNodeHashes) > 0 {
 		hashes := make([]node.Hash, 0, len(blockedNodeHashes))
 		for _, hex := range blockedNodeHashes {
 			h, err := node.ParseHex(hex)

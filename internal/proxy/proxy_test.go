@@ -747,7 +747,7 @@ func TestReverseParsePath_EmptyPlatform(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// Empty platform name is valid will fall through to default.
+	// Empty platform name is valid ?will fall through to default.
 	if parsed.PlatformName != "" {
 		t.Fatalf("expected empty platform, got %q", parsed.PlatformName)
 	}
@@ -1048,7 +1048,7 @@ func TestReverseProxy_AccountRejection_EmptyPlatform(t *testing.T) {
 		events:  NoOpEventEmitter{},
 	}
 
-	// Path: /tok/:/https/example.com/path empty platform, no account.
+	// Path: /tok/:/https/example.com/path ?empty platform, no account.
 	req := httptest.NewRequest("GET", "/tok/:/https/example.com/path", nil)
 	w := httptest.NewRecorder()
 	rp.ServeHTTP(w, req)
@@ -1064,7 +1064,7 @@ func TestReverseProxy_AccountRejection_EmptyPlatform(t *testing.T) {
 func TestReverseProxy_HostValidation(t *testing.T) {
 	rp := &ReverseProxy{token: "tok", events: NoOpEventEmitter{}}
 
-	// Test via parsePath directly host with invalid characters.
+	// Test via parsePath directly ?host with invalid characters.
 	_, err := rp.parsePath("/tok/plat:acct/https/host with space/path")
 	if err != ErrInvalidHost {
 		t.Fatalf("expected INVALID_HOST for host with space, got %v", err)
@@ -1223,13 +1223,13 @@ func TestTLSLatencyConn_WriteReadFlow(t *testing.T) {
 		server.Write([]byte("server hello"))
 	}()
 
-	// Client side: write Client Hello (triggers state 0).
+	// Client side: write Client Hello (triggers state 0?).
 	_, err := conn.Write([]byte("client hello"))
 	if err != nil {
 		t.Fatalf("write error: %v", err)
 	}
 
-	// Client side: read Server Hello (triggers state 1, fires callback).
+	// Client side: read Server Hello (triggers state 1?, fires callback).
 	readBuf := make([]byte, 100)
 	_, err = conn.Read(readBuf)
 	if err != nil {
@@ -1262,7 +1262,7 @@ func TestReverseProxy_AccountExtraction_WithMatcher(t *testing.T) {
 		t.Fatalf("expected alt-acct, got %q", account)
 	}
 
-	// Now set Authorization it should win.
+	// Now set Authorization ?it should win.
 	req.Header.Set("Authorization", "primary-acct")
 	account = extractAccountFromHeaders(req, headers)
 	if account != "primary-acct" {

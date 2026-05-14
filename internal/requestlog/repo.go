@@ -72,7 +72,7 @@ func (r *Repo) Open() error {
 		if err := r.openDB(latest); err != nil {
 			return err
 		}
-		// DESIGN.md 576: prune old files on startup.
+		// DESIGN.md §576: prune old files on startup.
 		return r.cleanup()
 	}
 	return r.rotateDB()
@@ -304,7 +304,7 @@ func (r *Repo) List(f ListFilter) ([]LogSummary, bool, *ListCursor, error) {
 		results = append(results, rows...)
 	}
 
-	// Global merge sort: DESIGN.md 577 requires ts_ns DESC, same ts_ns by id ASC.
+	// Global merge sort: DESIGN.md §577 requires ts_ns DESC, same ts_ns by id ASC.
 	sort.Slice(results, func(i, j int) bool {
 		if results[i].TsNs != results[j].TsNs {
 			return results[i].TsNs > results[j].TsNs

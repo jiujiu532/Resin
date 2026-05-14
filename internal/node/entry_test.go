@@ -89,7 +89,7 @@ func TestNodeEntry_MatchRegexs_Basic(t *testing.T) {
 		return "", false, nil, false
 	}
 
-	// Match "MySub/us-node" should match regex "us".
+	// Match "MySub/us-node" ?should match regex "us".
 	regexes := []*regexp.Regexp{regexp.MustCompile("us")}
 	if !e.MatchRegexs(regexes, lookup) {
 		t.Fatal("should match 'us' regex")
@@ -161,7 +161,7 @@ func TestNodeEntry_MatchRegexs_MultiSub(t *testing.T) {
 		return "", false, nil, false
 	}
 
-	// Match "us" should match via sub-2.
+	// Match "us" ?should match via sub-2.
 	regexes := []*regexp.Regexp{regexp.MustCompile("us")}
 	if !e.MatchRegexs(regexes, lookup) {
 		t.Fatal("should match via second subscription")

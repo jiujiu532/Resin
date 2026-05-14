@@ -42,7 +42,7 @@ func TestPool_AddNodeFromSub_Idempotent(t *testing.T) {
 	mn.StoreNode(h, subscription.ManagedNode{Tags: []string{"us-node"}})
 	sub.SwapManagedNodes(mn)
 
-	// Add twice should be idempotent.
+	// Add twice ?should be idempotent.
 	pool.AddNodeFromSub(h, raw, "s1")
 	pool.AddNodeFromSub(h, raw, "s1")
 
@@ -114,7 +114,7 @@ func TestPool_RemoveNodeFromSub_Idempotent(t *testing.T) {
 	raw := json.RawMessage(`{"type":"ss","server":"1.1.1.1"}`)
 	h := node.HashFromRawOptions(raw)
 
-	// Remove nonexistent should not panic.
+	// Remove nonexistent ?should not panic.
 	pool.RemoveNodeFromSub(h, "s1")
 
 	pool.AddNodeFromSub(h, raw, "s1")
@@ -149,13 +149,13 @@ func TestPool_CrossSubDedup(t *testing.T) {
 		t.Fatalf("expected 2 sub refs, got %d", entry.SubscriptionCount())
 	}
 
-	// Remove one sub ref node should remain.
+	// Remove one sub ref ?node should remain.
 	pool.RemoveNodeFromSub(h, "s1")
 	if pool.Size() != 1 {
 		t.Fatal("node should remain after removing one sub ref")
 	}
 
-	// Remove last ref node should be deleted.
+	// Remove last ref ?node should be deleted.
 	pool.RemoveNodeFromSub(h, "s2")
 	if pool.Size() != 0 {
 		t.Fatal("node should be deleted when all refs removed")
@@ -258,7 +258,7 @@ func TestPool_PlatformNotifyOnAddRemove(t *testing.T) {
 		t.Fatal("node with all conditions should be in view after re-add")
 	}
 
-	// Remove should leave view.
+	// Remove ?should leave view.
 	pool.RemoveNodeFromSub(h, "s1")
 	if plat.View().Size() != 0 {
 		t.Fatal("deleted node should be removed from view")

@@ -15,9 +15,9 @@ import (
 // second check (confirmedEvict) is NOT evicted.
 //
 // Timeline:
-//  1. Node is circuit-broken with stale CircuitOpenSince ->?enters evictSet.
+//  1. Node is circuit-broken with stale CircuitOpenSince ?enters evictSet.
 //  2. betweenScans hook fires: clears CircuitOpenSince (simulating recovery).
-//  3. Second check re-reads CircuitOpenSince=0 ->?node is NOT confirmed.
+//  3. Second check re-reads CircuitOpenSince=0 ?node is NOT confirmed.
 //  4. Node remains in subscription's managed nodes.
 func TestEphemeralCleaner_TOCTOU_RecoveryBetweenScans(t *testing.T) {
 	subMgr := NewSubscriptionManager()
@@ -58,7 +58,7 @@ func TestEphemeralCleaner_TOCTOU_RecoveryBetweenScans(t *testing.T) {
 	})
 
 	if !hookCalled {
-		t.Fatal("betweenScans hook was not called --?node may not have been a candidate")
+		t.Fatal("betweenScans hook was not called ?node may not have been a candidate")
 	}
 
 	// The node should still be in the subscription's managed nodes.
@@ -194,7 +194,7 @@ func TestEphemeralCleaner_TOCTOU_NoOutboundErrorRecoveredBetweenScans(t *testing
 	})
 
 	if !hookCalled {
-		t.Fatal("betweenScans hook was not called --?node may not have been a candidate")
+		t.Fatal("betweenScans hook was not called ?node may not have been a candidate")
 	}
 	if _, still := sub.ManagedNodes().LoadNode(hash); !still {
 		t.Fatal("TOCTOU regression: recovered no-outbound error node was evicted")

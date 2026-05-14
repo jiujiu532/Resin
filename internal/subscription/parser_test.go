@@ -104,7 +104,7 @@ func TestParseGeneralSubscription_SingboxJSON_MalformedJSON(t *testing.T) {
 }
 
 func TestParseGeneralSubscription_SingboxJSON_MalformedOutboundSkipped(t *testing.T) {
-	// A bare number is not a valid JSON object for an outbound -- should be skipped.
+	// A bare number is not a valid JSON object for an outbound — should be skipped.
 	data := []byte(`{"outbounds": [123]}`)
 	nodes, err := ParseGeneralSubscription(data)
 	if err != nil {

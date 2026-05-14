@@ -148,12 +148,12 @@ func copyRuntimeConfig(cfg *config.RuntimeConfig) *config.RuntimeConfig {
 // PatchRuntimeConfig applies a constrained partial patch to the runtime config.
 // This is not RFC 7396 JSON Merge Patch: patch must be a non-empty object and
 // null values are rejected.
-// Pipeline: validate persist atomic swap.
+// Pipeline: validate ?persist ?atomic swap.
 func (s *ControlPlaneService) PatchRuntimeConfig(patchJSON json.RawMessage) (*config.RuntimeConfig, error) {
 	s.configMu.Lock()
 	defer s.configMu.Unlock()
 
-	// 3. Deep-copy current config apply patch.
+	// 3. Deep-copy current config ?apply patch.
 	newCfg := copyRuntimeConfig(s.RuntimeCfg.Load())
 	if verr := parseRuntimeConfigPatch(patchJSON, newCfg); verr != nil {
 		return nil, verr

@@ -36,7 +36,7 @@ func (c *tlsLatencyConn) Write(b []byte) (int, error) {
 
 	n, err := c.Conn.Write(b)
 
-	// Capture first write (Client Hello) -- start timer.
+	// Capture first write (Client Hello) — start timer.
 	if n > 0 && err == nil {
 		if atomic.CompareAndSwapUint32(&c.state, 0, 1) {
 			atomic.StoreInt64(&c.startTime, time.Now().UnixNano())
@@ -53,7 +53,7 @@ func (c *tlsLatencyConn) Read(b []byte) (int, error) {
 
 	n, err := c.Conn.Read(b)
 
-	// Capture first read (Server Hello) -- stop timer.
+	// Capture first read (Server Hello) — stop timer.
 	if n > 0 && err == nil {
 		if atomic.CompareAndSwapUint32(&c.state, 1, 2) {
 			startNano := atomic.LoadInt64(&c.startTime)

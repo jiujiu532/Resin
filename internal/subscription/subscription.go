@@ -144,7 +144,7 @@ type Subscription struct {
 	attemptSeq     atomic.Int64
 	lastAppliedSeq atomic.Int64
 
-	// managedNodes is the subscription's node view: Hash ManagedNode.
+	// managedNodes is the subscription's node view: Hash ?ManagedNode.
 	// Swapped atomically on subscription update.
 	managedNodes atomic.Pointer[ManagedNodes]
 
@@ -346,7 +346,7 @@ func (s *Subscription) SwapManagedNodes(m *ManagedNodes) {
 func DiffHashes(
 	oldMap, newMap *ManagedNodes,
 ) (added, kept, removed []node.Hash) {
-	// Hashes only in new added. Hashes in both kept.
+	// Hashes only in new ?added. Hashes in both ?kept.
 	newMap.RangeNodes(func(h node.Hash, _ ManagedNode) bool {
 		if _, ok := oldMap.LoadNode(h); ok {
 			kept = append(kept, h)
@@ -356,7 +356,7 @@ func DiffHashes(
 		return true
 	})
 
-	// Hashes only in old removed.
+	// Hashes only in old ?removed.
 	oldMap.RangeNodes(func(h node.Hash, _ ManagedNode) bool {
 		if _, ok := newMap.LoadNode(h); !ok {
 			removed = append(removed, h)

@@ -413,7 +413,7 @@ func TestStateRepo_Platform_NameUniqueViolation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Different ID, same name should fail with ErrConflict.
+	// Different ID, same name ?should fail with ErrConflict.
 	p2 := p1
 	p2.ID = "plat-2"
 	err := repo.UpsertPlatform(p2)
@@ -552,7 +552,7 @@ func TestStateRepo_Subscription_CreatedAtNsPreserved(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Upsert again with a DIFFERENT created_at_ns it should be ignored.
+	// Upsert again with a DIFFERENT created_at_ns ?it should be ignored.
 	s.CreatedAtNs = int64(9999999)
 	s.URL = "https://example.com/v2"
 	s.UpdatedAtNs = int64(2000000)
