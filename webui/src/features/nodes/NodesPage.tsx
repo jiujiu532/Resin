@@ -754,8 +754,20 @@ export function NodesPage() {
     <section className="nodes-page">
       <header className="module-header">
         <div>
-          <h2>{t("总节点池")}</h2>
-          <p className="module-description">{t("快速定位异常节点并进行探测处理。")}</p>
+          {activeFilters.platform_id ? (
+            <>
+              <h2>
+                {(platforms.find((p) => p.id === activeFilters.platform_id)?.name ?? activeFilters.platform_id)}
+                {t("-节点池")}
+              </h2>
+              <p className="module-description">{t("当前为平台级视图，禁用/启用仅影响此平台。")}</p>
+            </>
+          ) : (
+            <>
+              <h2>{t("总节点池")}</h2>
+              <p className="module-description">{t("快速定位异常节点并进行探测处理。")}</p>
+            </>
+          )}
         </div>
       </header>
 
