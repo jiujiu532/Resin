@@ -440,13 +440,14 @@ export function PlatformDetailPage() {
                               style={{
                                 display: "inline-flex",
                                 alignItems: "center",
-                                gap: "0.3rem",
-                                padding: "2px 10px",
+                                gap: "0.4rem",
+                                padding: "5px 14px",
                                 borderRadius: "999px",
                                 background: "var(--primary-light, #e8f4fd)",
                                 color: "var(--primary, #1a73e8)",
-                                fontSize: "0.8rem",
+                                fontSize: "0.875rem",
                                 fontWeight: 500,
+                                border: "1px solid var(--primary-border, #b3d4f5)",
                               }}
                             >
                               {sub?.name ?? subId}

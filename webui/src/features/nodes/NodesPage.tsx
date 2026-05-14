@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createColumnHelper } from "@tanstack/react-table";
-import { AlertTriangle, Ban, CheckSquare, Eraser, Globe, RefreshCw, ShieldOff, Sparkles, Trash2, X, Zap } from "lucide-react";
+import { AlertTriangle, Ban, CheckSquare, Eraser, Globe, RefreshCw, Sparkles, Trash2, X, Zap } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useLocation } from "react-router-dom";
 import { Badge } from "../../components/ui/Badge";
@@ -15,10 +15,10 @@ import { useToast } from "../../hooks/useToast";
 import { useI18n } from "../../i18n";
 import { formatApiErrorMessage } from "../../lib/error-message";
 import { formatDateTime, formatRelativeTime } from "../../lib/time";
-import { blockNode, listPlatforms } from "../platforms/api";
+import { deleteNodes, disableNodes, enableNodes, getNode, listNodes, probeEgress, probeLatency } from "./api";
+import { listPlatforms } from "../platforms/api";
 import type { Platform } from "../platforms/types";
 import { listSubscriptions } from "../subscriptions/api";
-import { deleteNodes, disableNodes, enableNodes, getNode, listNodes, probeEgress, probeLatency } from "./api";
 import type { NodeSummary } from "./types";
 import { getAllRegions, getRegionName } from "./regions";
 import type { NodeListFilters, NodeSortBy, SortOrder } from "./types";
@@ -753,50 +753,7 @@ export function NodesPage() {
             <h3>{t("节点列表")}</h3>
             <p>{t("共 {{total}} 个节点，{{healthy}} 个健康 IP", { total: nodesPage.total, healthy: nodesPage.unique_healthy_egress_ips })}</p>
           </div>
-
-          {selectedHashes.size > 0 ? (
-            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ fontSize: "0.875rem", color: "var(--text-secondary)" }}>
-                {t("已选 {{count}} 个", { count: selectedHashes.size })}
-              </span>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => void disableMutation.mutateAsync([...selectedHashes])}
-                disabled={disableMutation.isPending}
-                style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
-              >
-                <Ban size={14} />
-                {disableMutation.isPending ? t("禁用中...") : t("禁用")}
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => void enableMutation.mutateAsync([...selectedHashes])}
-                disabled={enableMutation.isPending}
-                style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
-              >
-                <CheckSquare size={14} />
-                {enableMutation.isPending ? t("启用中...") : t("启用")}
-              </Button>
-              <Button
-                size="sm"
-                variant="danger"
-                onClick={() => setShowDeleteConfirm(true)}
-                style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
-              >
-                <Trash2 size={14} />
-                {t("删除")}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setSelectedHashes(new Set())}
-              >
-                {t("取消选择")}
-              </Button>
-            </div>
-          ) : null}
+        </div>
 
           <div
             className="nodes-inline-filters"
@@ -921,6 +878,59 @@ export function NodesPage() {
           </div>
         </div>
       </Card>
+
+      {selectedHashes.size > 0 ? (
+        <div style={{
+          display: "flex",
+          gap: "0.75rem",
+          alignItems: "center",
+          padding: "0.625rem 1rem",
+          background: "var(--surface-2, #f0f4ff)",
+          borderRadius: "8px",
+          flexWrap: "wrap",
+        }}>
+          <span style={{ fontSize: "0.875rem", color: "var(--text-secondary)", fontWeight: 500 }}>
+            {t("已选 {{count}} 个节点", { count: selectedHashes.size })}
+          </span>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => void disableMutation.mutateAsync([...selectedHashes])}
+            disabled={disableMutation.isPending}
+            style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}
+          >
+            <Ban size={14} />
+            {disableMutation.isPending ? t("禁用中...") : t("禁用")}
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => void enableMutation.mutateAsync([...selectedHashes])}
+            disabled={enableMutation.isPending}
+            style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}
+          >
+            <CheckSquare size={14} />
+            {enableMutation.isPending ? t("启用中...") : t("启用")}
+          </Button>
+          <Button
+            size="sm"
+            variant="danger"
+            onClick={() => setShowDeleteConfirm(true)}
+            style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}
+          >
+            <Trash2 size={14} />
+            {t("删除")}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setSelectedHashes(new Set())}
+            style={{ marginLeft: "auto" }}
+          >
+            {t("取消选择")}
+          </Button>
+        </div>
+      ) : null}
 
       <Card className="nodes-table-card platform-cards-container subscriptions-table-card">
         {nodesQuery.isLoading ? <p className="muted">{t("正在加载节点数据...")}</p> : null}
@@ -1122,11 +1132,6 @@ export function NodesPage() {
                     </Button>
                   </div>
                 </div>
-                <BlockNodePanel
-                  nodeHash={detailNode.node_hash}
-                  platforms={platforms}
-                  showToast={showToast}
-                />
               </section>
             </div>
           </Card>
@@ -1137,69 +1142,6 @@ export function NodesPage() {
 }
 
 type ShowToastFn = (type: "success" | "error", message: string) => void;
-
-function BlockNodePanel({
-  nodeHash,
-  platforms,
-  showToast,
-}: {
-  nodeHash: string;
-  platforms: Platform[];
-  showToast: ShowToastFn;
-}) {
-  const { t } = useI18n();
-  const [selectedPlatformId, setSelectedPlatformId] = useState("");
-
-  const blockMutation = useMutation({
-    mutationFn: ({ platformId, hash }: { platformId: string; hash: string }) =>
-      blockNode(platformId, hash),
-    onSuccess: () => {
-      showToast("success", t("节点已在所选平台加入黑名单"));
-    },
-    onError: (error) => {
-      showToast("error", formatApiErrorMessage(error, t));
-    },
-  });
-
-  return (
-    <div style={{ marginTop: "1.25rem", paddingTop: "1rem", borderTop: "1px solid var(--border, #e5e7eb)" }}>
-      <h5 style={{ margin: "0 0 0.5rem", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.875rem" }}>
-        <ShieldOff size={14} />
-        {t("在平台拉黑此节点")}
-      </h5>
-      <p style={{ margin: "0 0 0.75rem", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-        {t("选择平台后点击拉黑，该节点将不再参与所选平台的路由。")}
-      </p>
-      <div style={{ display: "flex", gap: "0.5rem" }}>
-        <Select
-          value={selectedPlatformId}
-          onChange={(e) => setSelectedPlatformId(e.target.value)}
-          style={{ flex: 1, fontSize: "0.875rem", height: "32px", padding: "0 8px" }}
-        >
-          <option value="">{t("选择平台")}</option>
-          {platforms.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </Select>
-        <Button
-          variant="danger"
-          size="sm"
-          onClick={() => {
-            if (selectedPlatformId) {
-              void blockMutation.mutateAsync({ platformId: selectedPlatformId, hash: nodeHash });
-            }
-          }}
-          disabled={!selectedPlatformId || blockMutation.isPending}
-          style={{ whiteSpace: "nowrap" }}
-        >
-          {blockMutation.isPending ? t("拉黑中...") : t("拉黑")}
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 const DELETE_CONFIRM_STORAGE_KEY = "resin_node_delete_no_confirm";
 
