@@ -906,13 +906,9 @@ export function NodesPage() {
             {t("已选 {{count}} 个节点", { count: selectedHashes.size })}
             {activeFilters.platform_id ? (
               <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", color: "var(--primary, #1a73e8)" }}>
-                ({t("平台级操作")})
+                ({t("仅影响当前平台")})
               </span>
-            ) : (
-              <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", color: "var(--warning, #d97706)" }}>
-                ({t("全局操作")})
-              </span>
-            )}
+            ) : null}
           </span>
           <Button
             size="sm"
@@ -939,6 +935,7 @@ export function NodesPage() {
             variant="danger"
             onClick={() => setShowDeleteConfirm(true)}
             style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}
+            title={t("删除操作不可恢复，将从所有平台和总节点池中彻底删除")}
           >
             <Trash2 size={14} />
             {t("删除")}
