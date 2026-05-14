@@ -11,6 +11,7 @@ type Platform struct {
 	RegexFilters                     []string
 	RegionFilters                    []string
 	BlockedNodeHashes                []string
+	SubscriptionSources              []string // subscription IDs; empty = all subscriptions
 	ReverseProxyMissAction           string `json:"reverse_proxy_miss_action"`
 	ReverseProxyEmptyAccountBehavior string `json:"reverse_proxy_empty_account_behavior"`
 	ReverseProxyFixedAccountHeader   string `json:"reverse_proxy_fixed_account_header"`

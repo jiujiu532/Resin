@@ -25,6 +25,10 @@ import (
 type GlobalNodePool struct {
 	nodes *xsync.Map[node.Hash, *node.NodeEntry]
 
+	// Global disabled node set (persisted to disabled_nodes table).
+	disabledMu   sync.RWMutex
+	disabledNodes map[node.Hash]struct{}
+
 	// Platform references for dirty-notify.
 	platMu         sync.RWMutex
 	platformByID   map[string]*platform.Platform // id -> platform
@@ -83,6 +87,7 @@ func NewGlobalNodePool(cfg PoolConfig) *GlobalNodePool {
 
 	return &GlobalNodePool{
 		nodes:                  xsync.NewMap[node.Hash, *node.NodeEntry](),
+		disabledNodes:          make(map[node.Hash]struct{}),
 		subLookup:              cfg.SubLookup,
 		geoLookup:              cfg.GeoLookup,
 		onNodeAdded:            cfg.OnNodeAdded,
@@ -675,4 +680,80 @@ func (p *GlobalNodePool) isAuthorityDomain(domain string) bool {
 		}
 	}
 	return false
+}
+
+// --- Global disable / enable / delete ---
+
+// LoadDisabledNodes replaces the in-memory disabled set from persisted data.
+// Called once during bootstrap.
+func (p *GlobalNodePool) LoadDisabledNodes(hashes []node.Hash) {
+	p.disabledMu.Lock()
+	defer p.disabledMu.Unlock()
+	m := make(map[node.Hash]struct{}, len(hashes))
+	for _, h := range hashes {
+		m[h] = struct{}{}
+	}
+	p.disabledNodes = m
+}
+
+// IsGloballyDisabled reports whether a node is in the global disabled set.
+func (p *GlobalNodePool) IsGloballyDisabled(h node.Hash) bool {
+	p.disabledMu.RLock()
+	defer p.disabledMu.RUnlock()
+	_, ok := p.disabledNodes[h]
+	return ok
+}
+
+// DisableNodes adds hashes to the global disabled set and notifies all platforms.
+func (p *GlobalNodePool) DisableNodes(hashes []node.Hash) {
+	p.disabledMu.Lock()
+	for _, h := range hashes {
+		p.disabledNodes[h] = struct{}{}
+	}
+	p.disabledMu.Unlock()
+	for _, h := range hashes {
+		p.notifyAllPlatformsDirty(h)
+	}
+}
+
+// EnableNodes removes hashes from the global disabled set and notifies all platforms.
+func (p *GlobalNodePool) EnableNodes(hashes []node.Hash) {
+	p.disabledMu.Lock()
+	for _, h := range hashes {
+		delete(p.disabledNodes, h)
+	}
+	p.disabledMu.Unlock()
+	for _, h := range hashes {
+		p.notifyAllPlatformsDirty(h)
+	}
+}
+
+// DeleteNodes permanently removes nodes from the pool and all subscription references.
+// It calls RemoveNodeFromSub for every subscription that holds each node,
+// which triggers pool deletion when the last reference is removed.
+func (p *GlobalNodePool) DeleteNodes(hashes []node.Hash) {
+	for _, h := range hashes {
+		entry, ok := p.nodes.Load(h)
+		if !ok {
+			continue
+		}
+		subIDs := entry.SubscriptionIDs()
+		for _, subID := range subIDs {
+			p.RemoveNodeFromSub(h, subID)
+		}
+		// Also remove from disabled set.
+		p.disabledMu.Lock()
+		delete(p.disabledNodes, h)
+		p.disabledMu.Unlock()
+	}
+}
+
+// RemoveNodeFromAllPlatformBlocklists removes a node hash from every platform's
+// blocked_node_hashes. Called after global delete to keep blocklists clean.
+func (p *GlobalNodePool) RemoveNodeFromAllPlatformBlocklists(h node.Hash) {
+	hexStr := h.Hex()
+	platforms := p.platformSnapshot()
+	for _, plat := range platforms {
+		plat.RemoveFromBlocklist(hexStr)
+	}
 }

@@ -162,3 +162,20 @@ func (e *StateEngine) FlushDirtySets(readers CacheReaders) error {
 		len(drainedStatic), len(drainedSubNodes), len(drainedDynamic), len(drainedLatency), len(drainedLeases))
 	return nil
 }
+
+// --- Disabled nodes (strong-persist, direct write) ---
+
+// AddDisabledNodes persists node hashes to the disabled_nodes table.
+func (e *StateEngine) AddDisabledNodes(hashes []string) error {
+	return e.StateRepo.AddDisabledNodes(hashes)
+}
+
+// RemoveDisabledNodes removes node hashes from the disabled_nodes table.
+func (e *StateEngine) RemoveDisabledNodes(hashes []string) error {
+	return e.StateRepo.RemoveDisabledNodes(hashes)
+}
+
+// ListDisabledNodes returns all globally disabled node hashes.
+func (e *StateEngine) ListDisabledNodes() ([]string, error) {
+	return e.StateRepo.ListDisabledNodes()
+}

@@ -29,11 +29,16 @@ type Platform struct {
 	Name string
 
 	// Filter configuration.
-	RegexFilters  []*regexp.Regexp
-	RegionFilters []string // lowercase ISO codes, supports negation "!xx"
+	RegexFilters        []*regexp.Regexp
+	RegionFilters       []string // lowercase ISO codes, supports negation "!xx"
+	SubscriptionSources []string // subscription IDs; empty = all subscriptions
 
 	// Platform-level node blocklist, keyed by node.Hash.
 	blockedNodes map[node.Hash]struct{}
+
+	// GlobalDisabledFn is injected at runtime to check the global disabled set.
+	// It must be set before FullRebuild/NotifyDirty are called.
+	GlobalDisabledFn func(node.Hash) bool
 
 	// Other config fields.
 	StickyTTLNs                      int64
@@ -77,6 +82,16 @@ func (p *Platform) IsNodeBlocked(h node.Hash) bool {
 	}
 	_, blocked := p.blockedNodes[h]
 	return blocked
+}
+
+// RemoveFromBlocklist removes a single node hex string from the platform's blocklist.
+// Used when a node is globally deleted to keep blocklists consistent.
+func (p *Platform) RemoveFromBlocklist(hexStr string) {
+	h, err := node.ParseHex(hexStr)
+	if err != nil || p.blockedNodes == nil {
+		return
+	}
+	delete(p.blockedNodes, h)
 }
 
 // View returns the platform's routable view as a read-only interface.
@@ -135,28 +150,52 @@ func (p *Platform) evaluateNode(
 	subLookup node.SubLookupFunc,
 	geoLookup GeoLookupFunc,
 ) bool {
-	// 0. Disabled nodes are never routable.
+	// 0. Globally disabled nodes are never routable.
+	if p.GlobalDisabledFn != nil && p.GlobalDisabledFn(entry.Hash) {
+		return false
+	}
+
+	// 1. Disabled nodes are never routable.
 	if entry.IsDisabledBySubscriptions(subLookup) {
 		return false
 	}
 
-	// 1. Healthy for routing (outbound ready + circuit not open).
+	// 2. Healthy for routing (outbound ready + circuit not open).
 	if !entry.IsHealthy() {
 		return false
 	}
 
-	// 2. Tag regex match.
+	// 3. Subscription source filter: node must belong to at least one selected subscription.
+	if len(p.SubscriptionSources) > 0 {
+		sourceSet := make(map[string]struct{}, len(p.SubscriptionSources))
+		for _, id := range p.SubscriptionSources {
+			sourceSet[id] = struct{}{}
+		}
+		subIDs := entry.SubscriptionIDs()
+		found := false
+		for _, subID := range subIDs {
+			if _, ok := sourceSet[subID]; ok {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	// 4. Tag regex match.
 	if !entry.MatchRegexs(p.RegexFilters, subLookup) {
 		return false
 	}
 
-	// 3. Egress IP must be known.
+	// 5. Egress IP must be known.
 	egressIP := entry.GetEgressIP()
 	if !egressIP.IsValid() {
 		return false
 	}
 
-	// 4. Region filter (when configured).
+	// 6. Region filter (when configured).
 	if len(p.RegionFilters) > 0 {
 		region := entry.GetRegion(geoLookup)
 		if !MatchRegionFilter(region, p.RegionFilters) {
@@ -164,12 +203,12 @@ func (p *Platform) evaluateNode(
 		}
 	}
 
-	// 5. Has at least one latency record.
+	// 7. Has at least one latency record.
 	if !entry.HasLatency() {
 		return false
 	}
 
-	// 6. Platform-level node blocklist.
+	// 8. Platform-level node blocklist.
 	if p.IsNodeBlocked(entry.Hash) {
 		return false
 	}

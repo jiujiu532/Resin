@@ -211,3 +211,69 @@ func HandleProbeLatency(cp *service.ControlPlaneService) http.HandlerFunc {
 		WriteJSON(w, http.StatusOK, result)
 	}
 }
+
+// HandleDisableNodes returns a handler for POST /api/v1/nodes/actions/disable.
+func HandleDisableNodes(cp *service.ControlPlaneService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			NodeHashes []string `json:"node_hashes"`
+		}
+		if err := DecodeBody(r, &req); err != nil {
+			writeDecodeBodyError(w, err)
+			return
+		}
+		if len(req.NodeHashes) == 0 {
+			writeInvalidArgument(w, "node_hashes must not be empty")
+			return
+		}
+		if err := cp.DisableNodesGlobally(req.NodeHashes); err != nil {
+			writeServiceError(w, err)
+			return
+		}
+		WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	}
+}
+
+// HandleEnableNodes returns a handler for POST /api/v1/nodes/actions/enable.
+func HandleEnableNodes(cp *service.ControlPlaneService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			NodeHashes []string `json:"node_hashes"`
+		}
+		if err := DecodeBody(r, &req); err != nil {
+			writeDecodeBodyError(w, err)
+			return
+		}
+		if len(req.NodeHashes) == 0 {
+			writeInvalidArgument(w, "node_hashes must not be empty")
+			return
+		}
+		if err := cp.EnableNodesGlobally(req.NodeHashes); err != nil {
+			writeServiceError(w, err)
+			return
+		}
+		WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	}
+}
+
+// HandleDeleteNodes returns a handler for POST /api/v1/nodes/actions/delete.
+func HandleDeleteNodes(cp *service.ControlPlaneService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			NodeHashes []string `json:"node_hashes"`
+		}
+		if err := DecodeBody(r, &req); err != nil {
+			writeDecodeBodyError(w, err)
+			return
+		}
+		if len(req.NodeHashes) == 0 {
+			writeInvalidArgument(w, "node_hashes must not be empty")
+			return
+		}
+		if err := cp.DeleteNodesGlobally(req.NodeHashes); err != nil {
+			writeServiceError(w, err)
+			return
+		}
+		WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	}
+}

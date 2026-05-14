@@ -19,13 +19,15 @@ const (
 	// Keep these version markers in sync with SQL files under migrations/state/.
 	// stateLegacyBaselineVersion must remain fixed to the highest migration
 	// version covered by compatibility detection for pre-migrate databases.
-	stateVersionBaseSchema               = 1
-	stateVersionAddEmptyAccountBehavior  = 2
-	stateVersionAddFixedAccountHeader    = 3
-	stateVersionNormalizeMissAction      = 4
-	stateVersionAddIncrementalAliveNodes = 5
-	stateVersionAddBlockedNodes          = 6
-	stateLegacyBaselineVersion           = stateVersionAddFixedAccountHeader
+	stateVersionBaseSchema                    = 1
+	stateVersionAddEmptyAccountBehavior       = 2
+	stateVersionAddFixedAccountHeader         = 3
+	stateVersionNormalizeMissAction           = 4
+	stateVersionAddIncrementalAliveNodes      = 5
+	stateVersionAddBlockedNodes               = 6
+	stateVersionAddDisabledNodes              = 7
+	stateVersionAddSubscriptionSources        = 8
+	stateLegacyBaselineVersion                = stateVersionAddFixedAccountHeader
 
 	stateBaseSchemaMigration = stateMigrationsPath + "/000001_state_base.up.sql"
 )

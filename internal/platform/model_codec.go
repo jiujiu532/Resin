@@ -50,6 +50,7 @@ func NewConfiguredPlatform(
 	regexFilters []*regexp.Regexp,
 	regionFilters []string,
 	blockedNodeHashes []string,
+	subscriptionSources []string,
 	stickyTTLNs int64,
 	missAction string,
 	emptyAccountBehavior string,
@@ -68,6 +69,7 @@ func NewConfiguredPlatform(
 	plat.ReverseProxyFixedAccountHeader = normalizedFixedHeaders
 	plat.ReverseProxyFixedAccountHeaders = append([]string(nil), fixedHeaders...)
 	plat.AllocationPolicy = ParseAllocationPolicy(allocationPolicy)
+	plat.SubscriptionSources = append([]string(nil), subscriptionSources...)
 
 	// Parse blocked node hashes.
 	if len(blockedNodeHashes) > 0 {
@@ -132,6 +134,7 @@ func BuildFromModel(mp model.Platform) (*Platform, error) {
 		regexFilters,
 		append([]string(nil), mp.RegionFilters...),
 		append([]string(nil), mp.BlockedNodeHashes...),
+		append([]string(nil), mp.SubscriptionSources...),
 		mp.StickyTTLNs,
 		string(missAction),
 		emptyAccountBehavior,

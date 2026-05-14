@@ -403,6 +403,23 @@ func bootstrapTopology(
 	if err != nil {
 		return fmt.Errorf("load platforms: %w", err)
 	}
+	// Load globally disabled nodes before registering platforms so that
+	// GlobalDisabledFn is ready when FullRebuild is called.
+	disabledHexes, err := engine.ListDisabledNodes()
+	if err != nil {
+		return fmt.Errorf("load disabled nodes: %w", err)
+	}
+	if len(disabledHexes) > 0 {
+		disabledHashes := make([]node.Hash, 0, len(disabledHexes))
+		for _, hexStr := range disabledHexes {
+			h, parseErr := node.ParseHex(hexStr)
+			if parseErr == nil {
+				disabledHashes = append(disabledHashes, h)
+			}
+		}
+		pool.LoadDisabledNodes(disabledHashes)
+		log.Printf("Loaded %d globally disabled nodes", len(disabledHashes))
+	}
 	if envCfg != nil && envCfg.AuthVersion == config.AuthVersionV1 {
 		if err := validatePersistedPlatformNamesForV1(dbPlats); err != nil {
 			return fmt.Errorf("validate platform names for V1: %w", err)
@@ -420,6 +437,7 @@ func bootstrapTopology(
 		if err != nil {
 			return err
 		}
+		plat.GlobalDisabledFn = pool.IsGloballyDisabled
 		pool.RegisterPlatform(plat)
 	}
 	log.Printf("Loaded %d platforms from state.db", len(dbPlats))

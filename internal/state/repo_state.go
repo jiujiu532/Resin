@@ -148,6 +148,10 @@ func (r *StateRepo) UpsertPlatform(p model.Platform) error {
 	if err != nil {
 		return fmt.Errorf("encode platform %s blocked_node_hashes: %w", p.ID, err)
 	}
+	subscriptionSourcesJSON, err := encodeStringSliceJSON(p.SubscriptionSources)
+	if err != nil {
+		return fmt.Errorf("encode platform %s subscription_sources: %w", p.ID, err)
+	}
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -156,8 +160,8 @@ func (r *StateRepo) UpsertPlatform(p model.Platform) error {
 		INSERT INTO platforms (id, name, sticky_ttl_ns, regex_filters_json, region_filters_json,
 		                       reverse_proxy_miss_action, reverse_proxy_empty_account_behavior,
 		                       reverse_proxy_fixed_account_header, allocation_policy,
-		                       blocked_node_hashes_json, updated_at_ns)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		                       blocked_node_hashes_json, subscription_sources_json, updated_at_ns)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET
 			name                     = excluded.name,
 			sticky_ttl_ns            = excluded.sticky_ttl_ns,
@@ -168,10 +172,11 @@ func (r *StateRepo) UpsertPlatform(p model.Platform) error {
 			reverse_proxy_fixed_account_header   = excluded.reverse_proxy_fixed_account_header,
 			allocation_policy        = excluded.allocation_policy,
 			blocked_node_hashes_json = excluded.blocked_node_hashes_json,
+			subscription_sources_json = excluded.subscription_sources_json,
 			updated_at_ns            = excluded.updated_at_ns
 		`, p.ID, p.Name, p.StickyTTLNs, regexFiltersJSON, regionFiltersJSON,
 		p.ReverseProxyMissAction, p.ReverseProxyEmptyAccountBehavior, p.ReverseProxyFixedAccountHeader,
-		p.AllocationPolicy, blockedNodeHashesJSON, p.UpdatedAtNs)
+		p.AllocationPolicy, blockedNodeHashesJSON, subscriptionSourcesJSON, p.UpdatedAtNs)
 	if err != nil {
 		if isSQLiteUniqueConstraint(err) {
 			return fmt.Errorf("%w: platform name already exists", ErrConflict)
@@ -227,15 +232,17 @@ func (r *StateRepo) GetPlatform(id string) (*model.Platform, error) {
 	row := r.db.QueryRow(`SELECT id, name, sticky_ttl_ns, regex_filters_json, region_filters_json,
 			reverse_proxy_miss_action, reverse_proxy_empty_account_behavior,
 			reverse_proxy_fixed_account_header, allocation_policy,
-			COALESCE(blocked_node_hashes_json, '[]'), updated_at_ns
+			COALESCE(blocked_node_hashes_json, '[]'),
+			COALESCE(subscription_sources_json, '[]'),
+			updated_at_ns
 			FROM platforms WHERE id = ?`, id)
 
 	var p model.Platform
-	var regexFiltersJSON, regionFiltersJSON, blockedNodeHashesJSON string
+	var regexFiltersJSON, regionFiltersJSON, blockedNodeHashesJSON, subscriptionSourcesJSON string
 	if err := row.Scan(&p.ID, &p.Name, &p.StickyTTLNs, &regexFiltersJSON,
 		&regionFiltersJSON, &p.ReverseProxyMissAction, &p.ReverseProxyEmptyAccountBehavior,
 		&p.ReverseProxyFixedAccountHeader, &p.AllocationPolicy,
-		&blockedNodeHashesJSON, &p.UpdatedAtNs); err != nil {
+		&blockedNodeHashesJSON, &subscriptionSourcesJSON, &p.UpdatedAtNs); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, ErrNotFound
 		}
@@ -253,9 +260,14 @@ func (r *StateRepo) GetPlatform(id string) (*model.Platform, error) {
 	if err != nil {
 		return nil, fmt.Errorf("decode platform %s blocked_node_hashes_json: %w", p.ID, err)
 	}
+	subscriptionSources, err := decodeStringSliceJSON(subscriptionSourcesJSON)
+	if err != nil {
+		return nil, fmt.Errorf("decode platform %s subscription_sources_json: %w", p.ID, err)
+	}
 	p.RegexFilters = regexFilters
 	p.RegionFilters = regionFilters
 	p.BlockedNodeHashes = blockedNodeHashes
+	p.SubscriptionSources = subscriptionSources
 	return &p, nil
 }
 
@@ -264,7 +276,9 @@ func (r *StateRepo) ListPlatforms() ([]model.Platform, error) {
 	rows, err := r.db.Query(`SELECT id, name, sticky_ttl_ns, regex_filters_json, region_filters_json,
 		reverse_proxy_miss_action, reverse_proxy_empty_account_behavior,
 		reverse_proxy_fixed_account_header, allocation_policy,
-		COALESCE(blocked_node_hashes_json, '[]'), updated_at_ns FROM platforms`)
+		COALESCE(blocked_node_hashes_json, '[]'),
+		COALESCE(subscription_sources_json, '[]'),
+		updated_at_ns FROM platforms`)
 	if err != nil {
 		return nil, err
 	}
@@ -273,11 +287,11 @@ func (r *StateRepo) ListPlatforms() ([]model.Platform, error) {
 	var result []model.Platform
 	for rows.Next() {
 		var p model.Platform
-		var regexFiltersJSON, regionFiltersJSON, blockedNodeHashesJSON string
+		var regexFiltersJSON, regionFiltersJSON, blockedNodeHashesJSON, subscriptionSourcesJSON string
 		if err := rows.Scan(&p.ID, &p.Name, &p.StickyTTLNs, &regexFiltersJSON,
 			&regionFiltersJSON, &p.ReverseProxyMissAction, &p.ReverseProxyEmptyAccountBehavior,
 			&p.ReverseProxyFixedAccountHeader, &p.AllocationPolicy,
-			&blockedNodeHashesJSON, &p.UpdatedAtNs); err != nil {
+			&blockedNodeHashesJSON, &subscriptionSourcesJSON, &p.UpdatedAtNs); err != nil {
 			return nil, err
 		}
 		regexFilters, err := decodeStringSliceJSON(regexFiltersJSON)
@@ -292,9 +306,14 @@ func (r *StateRepo) ListPlatforms() ([]model.Platform, error) {
 		if err != nil {
 			return nil, fmt.Errorf("decode platform %s blocked_node_hashes_json: %w", p.ID, err)
 		}
+		subscriptionSources, err := decodeStringSliceJSON(subscriptionSourcesJSON)
+		if err != nil {
+			return nil, fmt.Errorf("decode platform %s subscription_sources_json: %w", p.ID, err)
+		}
 		p.RegexFilters = regexFilters
 		p.RegionFilters = regionFilters
 		p.BlockedNodeHashes = blockedNodeHashes
+		p.SubscriptionSources = subscriptionSources
 		result = append(result, p)
 	}
 	return result, rows.Err()
@@ -490,4 +509,82 @@ func (r *StateRepo) ListAccountHeaderRules() ([]model.AccountHeaderRule, error) 
 		result = append(result, rule)
 	}
 	return result, rows.Err()
+}
+
+// --- disabled_nodes ---
+
+// AddDisabledNodes inserts node hashes into the disabled_nodes table.
+// Idempotent: existing hashes are ignored via INSERT OR IGNORE.
+func (r *StateRepo) AddDisabledNodes(hashes []string) error {
+	if len(hashes) == 0 {
+		return nil
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	stmt, err := tx.Prepare("INSERT OR IGNORE INTO disabled_nodes (node_hash) VALUES (?)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	for _, h := range hashes {
+		if _, err := stmt.Exec(h); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+// RemoveDisabledNodes deletes node hashes from the disabled_nodes table.
+func (r *StateRepo) RemoveDisabledNodes(hashes []string) error {
+	if len(hashes) == 0 {
+		return nil
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	stmt, err := tx.Prepare("DELETE FROM disabled_nodes WHERE node_hash = ?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	for _, h := range hashes {
+		if _, err := stmt.Exec(h); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+// ListDisabledNodes returns all globally disabled node hashes.
+func (r *StateRepo) ListDisabledNodes() ([]string, error) {
+	rows, err := r.db.Query("SELECT node_hash FROM disabled_nodes")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []string
+	for rows.Next() {
+		var h string
+		if err := rows.Scan(&h); err != nil {
+			return nil, err
+		}
+		result = append(result, h)
+	}
+	return result, rows.Err()
+}
+
+// IsNodeDisabledGlobally reports whether a single node hash is globally disabled.
+func (r *StateRepo) IsNodeDisabledGlobally(hashHex string) (bool, error) {
+	var count int
+	err := r.db.QueryRow("SELECT COUNT(*) FROM disabled_nodes WHERE node_hash = ?", hashHex).Scan(&count)
+	return count > 0, err
 }

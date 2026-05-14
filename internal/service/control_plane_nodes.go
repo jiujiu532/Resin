@@ -255,3 +255,106 @@ func (s *ControlPlaneService) ProbeLatency(hashStr string) (*probe.LatencyProbeR
 	}
 	return result, nil
 }
+
+// ------------------------------------------------------------------
+// Global node disable / enable / delete
+// ------------------------------------------------------------------
+
+// DisableNodesGlobally marks nodes as globally disabled and persists the change.
+func (s *ControlPlaneService) DisableNodesGlobally(nodeHashes []string) error {
+	if len(nodeHashes) == 0 {
+		return nil
+	}
+	hashes := make([]node.Hash, 0, len(nodeHashes))
+	for _, hexStr := range nodeHashes {
+		h, err := node.ParseHex(hexStr)
+		if err != nil {
+			return invalidArg("node_hash: invalid hex format: " + hexStr)
+		}
+		hashes = append(hashes, h)
+	}
+	if err := s.Engine.AddDisabledNodes(nodeHashes); err != nil {
+		return internal("persist disabled nodes", err)
+	}
+	s.Pool.DisableNodes(hashes)
+	return nil
+}
+
+// EnableNodesGlobally removes nodes from the global disabled set and persists the change.
+func (s *ControlPlaneService) EnableNodesGlobally(nodeHashes []string) error {
+	if len(nodeHashes) == 0 {
+		return nil
+	}
+	hashes := make([]node.Hash, 0, len(nodeHashes))
+	for _, hexStr := range nodeHashes {
+		h, err := node.ParseHex(hexStr)
+		if err != nil {
+			return invalidArg("node_hash: invalid hex format: " + hexStr)
+		}
+		hashes = append(hashes, h)
+	}
+	if err := s.Engine.RemoveDisabledNodes(nodeHashes); err != nil {
+		return internal("persist enabled nodes", err)
+	}
+	s.Pool.EnableNodes(hashes)
+	return nil
+}
+
+// DeleteNodesGlobally permanently removes nodes from the pool, all subscriptions,
+// all platform blocklists, and the global disabled set.
+func (s *ControlPlaneService) DeleteNodesGlobally(nodeHashes []string) error {
+	if len(nodeHashes) == 0 {
+		return nil
+	}
+	hashes := make([]node.Hash, 0, len(nodeHashes))
+	for _, hexStr := range nodeHashes {
+		h, err := node.ParseHex(hexStr)
+		if err != nil {
+			return invalidArg("node_hash: invalid hex format: " + hexStr)
+		}
+		hashes = append(hashes, h)
+	}
+
+	// Remove from pool (cascades to subscriptions).
+	s.Pool.DeleteNodes(hashes)
+
+	// Remove from all platform blocklists in memory.
+	for _, h := range hashes {
+		s.Pool.RemoveNodeFromAllPlatformBlocklists(h)
+	}
+
+	// Remove from global disabled set.
+	if err := s.Engine.RemoveDisabledNodes(nodeHashes); err != nil {
+		return internal("remove from disabled nodes", err)
+	}
+
+	// Remove from all platform blocked_node_hashes in DB.
+	platforms, err := s.Engine.ListPlatforms()
+	if err != nil {
+		return internal("list platforms for blocklist cleanup", err)
+	}
+	hashSet := make(map[string]struct{}, len(nodeHashes))
+	for _, h := range nodeHashes {
+		hashSet[h] = struct{}{}
+	}
+	for _, mp := range platforms {
+		changed := false
+		newHashes := mp.BlockedNodeHashes[:0:0]
+		for _, h := range mp.BlockedNodeHashes {
+			if _, del := hashSet[h]; del {
+				changed = true
+				continue
+			}
+			newHashes = append(newHashes, h)
+		}
+		if changed {
+			mp.BlockedNodeHashes = newHashes
+			mp.UpdatedAtNs = time.Now().UnixNano()
+			if err := s.Engine.UpsertPlatform(mp); err != nil {
+				return internal("update platform blocklist after delete", err)
+			}
+		}
+	}
+
+	return nil
+}

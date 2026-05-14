@@ -28,6 +28,7 @@ type PlatformResponse struct {
 	RegexFilters                     []string `json:"regex_filters"`
 	RegionFilters                    []string `json:"region_filters"`
 	BlockedNodeHashes                []string `json:"blocked_node_hashes"`
+	SubscriptionSources              []string `json:"subscription_sources"`
 	RoutableNodeCount                int      `json:"routable_node_count"`
 	ReverseProxyMissAction           string   `json:"reverse_proxy_miss_action"`
 	ReverseProxyEmptyAccountBehavior string   `json:"reverse_proxy_empty_account_behavior"`
@@ -43,6 +44,10 @@ func platformToResponse(p model.Platform) PlatformResponse {
 	if blocked == nil {
 		blocked = []string{}
 	}
+	sources := p.SubscriptionSources
+	if sources == nil {
+		sources = []string{}
+	}
 	return PlatformResponse{
 		ID:                               p.ID,
 		Name:                             p.Name,
@@ -50,6 +55,7 @@ func platformToResponse(p model.Platform) PlatformResponse {
 		RegexFilters:                     append([]string(nil), p.RegexFilters...),
 		RegionFilters:                    append([]string(nil), p.RegionFilters...),
 		BlockedNodeHashes:                blocked,
+		SubscriptionSources:              sources,
 		RoutableNodeCount:                0,
 		ReverseProxyMissAction:           p.ReverseProxyMissAction,
 		ReverseProxyEmptyAccountBehavior: behavior,
@@ -77,6 +83,7 @@ type platformConfig struct {
 	RegexFilters                     []string
 	RegionFilters                    []string
 	BlockedNodeHashes                []string
+	SubscriptionSources              []string
 	ReverseProxyMissAction           string
 	ReverseProxyEmptyAccountBehavior string
 	ReverseProxyFixedAccountHeader   string
@@ -122,6 +129,7 @@ func platformConfigFromModel(mp model.Platform) platformConfig {
 		RegexFilters:                     append([]string(nil), mp.RegexFilters...),
 		RegionFilters:                    append([]string(nil), mp.RegionFilters...),
 		BlockedNodeHashes:                append([]string(nil), mp.BlockedNodeHashes...),
+		SubscriptionSources:              append([]string(nil), mp.SubscriptionSources...),
 		ReverseProxyMissAction:           mp.ReverseProxyMissAction,
 		ReverseProxyEmptyAccountBehavior: normalizePlatformEmptyAccountBehavior(mp.ReverseProxyEmptyAccountBehavior),
 		ReverseProxyFixedAccountHeader:   normalizeHeaderFieldName(mp.ReverseProxyFixedAccountHeader),
@@ -137,6 +145,7 @@ func (cfg platformConfig) toModel(id string, updatedAtNs int64) model.Platform {
 		RegexFilters:                     append([]string(nil), cfg.RegexFilters...),
 		RegionFilters:                    append([]string(nil), cfg.RegionFilters...),
 		BlockedNodeHashes:                append([]string(nil), cfg.BlockedNodeHashes...),
+		SubscriptionSources:              append([]string(nil), cfg.SubscriptionSources...),
 		ReverseProxyMissAction:           cfg.ReverseProxyMissAction,
 		ReverseProxyEmptyAccountBehavior: cfg.ReverseProxyEmptyAccountBehavior,
 		ReverseProxyFixedAccountHeader:   cfg.ReverseProxyFixedAccountHeader,
@@ -156,6 +165,7 @@ func (cfg platformConfig) toRuntime(id string) (*platform.Platform, error) {
 		compiledRegexFilters,
 		cfg.RegionFilters,
 		cfg.BlockedNodeHashes,
+		cfg.SubscriptionSources,
 		cfg.StickyTTLNs,
 		cfg.ReverseProxyMissAction,
 		cfg.ReverseProxyEmptyAccountBehavior,
@@ -405,6 +415,7 @@ func (s *ControlPlaneService) CreatePlatform(req CreatePlatformRequest) (*Platfo
 	// Register in topology pool.
 	// Build the routable view before publish so concurrent readers don't observe
 	// a newly created platform with an empty view.
+	plat.GlobalDisabledFn = s.Pool.IsGloballyDisabled
 	s.Pool.RebuildPlatform(plat)
 	s.Pool.RegisterPlatform(plat)
 
@@ -514,6 +525,7 @@ func (s *ControlPlaneService) UpdatePlatform(id string, patchJSON json.RawMessag
 	}
 
 	// Replace in topology pool.
+	plat.GlobalDisabledFn = s.Pool.IsGloballyDisabled
 	if err := s.Pool.ReplacePlatform(plat); err != nil {
 		return nil, internal("replace platform in pool", err)
 	}
@@ -554,6 +566,7 @@ func (s *ControlPlaneService) ResetPlatformToDefault(id string) (*PlatformRespon
 		return nil, svcErr
 	}
 
+	plat.GlobalDisabledFn = s.Pool.IsGloballyDisabled
 	if err := s.Pool.ReplacePlatform(plat); err != nil {
 		return nil, internal("replace platform in pool", err)
 	}
@@ -802,6 +815,7 @@ func (s *ControlPlaneService) BlockNode(platformID, nodeHash string) (*PlatformR
 	if err2 != nil {
 		return nil, internal("build platform runtime", err2)
 	}
+	plat.GlobalDisabledFn = s.Pool.IsGloballyDisabled
 	if err := s.Pool.ReplacePlatform(plat); err != nil {
 		return nil, internal("replace platform in pool", err)
 	}
@@ -840,6 +854,7 @@ func (s *ControlPlaneService) UnblockNode(platformID, nodeHash string) (*Platfor
 	if err2 != nil {
 		return nil, internal("build platform runtime", err2)
 	}
+	plat.GlobalDisabledFn = s.Pool.IsGloballyDisabled
 	if err := s.Pool.ReplacePlatform(plat); err != nil {
 		return nil, internal("replace platform in pool", err)
 	}
