@@ -77,14 +77,36 @@ func (s *ControlPlaneService) ListNodes(filters NodeFilters) ([]NodeSummary, err
 
 	var result []NodeSummary
 	appendIfMatched := func(h node.Hash, entry *node.NodeEntry) {
-		if !s.nodeEntryMatchesFilters(entry, filters, subLookup) {
-			return
-		}
-		ns := s.nodeEntryToSummary(h, entry)
+		isPlatformBlocked := false
 		if platformBlockedSet != nil {
-			if _, blocked := platformBlockedSet[h]; blocked {
-				ns.PlatformDisabled = true
+			_, isPlatformBlocked = platformBlockedSet[h]
+		}
+
+		// When enabled filter is set and we have a platform context,
+		// platform-blocked nodes count as disabled regardless of global state.
+		if filters.Enabled != nil && platformBlockedSet != nil {
+			if isPlatformBlocked && *filters.Enabled {
+				// Want enabled=true but node is platform-blocked -> skip
+				return
 			}
+			if !isPlatformBlocked {
+				// Node is not platform-blocked; fall through to normal filter check
+				if !s.nodeEntryMatchesFilters(entry, filters, subLookup) {
+					return
+				}
+			} else {
+				// Node is platform-blocked and we want enabled=false -> include it
+				// (skip normal filter which would check global enabled state)
+			}
+		} else {
+			if !s.nodeEntryMatchesFilters(entry, filters, subLookup) {
+				return
+			}
+		}
+
+		ns := s.nodeEntryToSummary(h, entry)
+		if isPlatformBlocked {
+			ns.PlatformDisabled = true
 		}
 		result = append(result, ns)
 	}
