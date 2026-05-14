@@ -1140,8 +1140,6 @@ export function NodesPage() {
   );
 }
 
-type ShowToastFn = (type: "success" | "error", message: string) => void;
-
 const DELETE_CONFIRM_STORAGE_KEY = "resin_node_delete_no_confirm";
 
 function DeleteConfirmDialog({
