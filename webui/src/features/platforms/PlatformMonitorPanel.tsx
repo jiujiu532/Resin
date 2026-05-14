@@ -10,6 +10,7 @@ import { useI18n } from "../../i18n";
 import { getCurrentLocale, isEnglishLocale } from "../../i18n/locale";
 import { apiRequest } from "../../lib/api-client";
 import { formatApiErrorMessage } from "../../lib/error-message";
+import { listNodes } from "../nodes/api";
 import type {
   HistoryAccessLatencyResponse,
   HistoryLeaseLifetimeResponse,
@@ -40,6 +41,9 @@ type PlatformHistoryBundle = {
 type PlatformSnapshotBundle = {
   nodePool: SnapshotPlatformNodePool;
   nodeLatency: SnapshotNodeLatencyDistribution;
+  totalNodeCount: number;
+  enabledNodeCount: number;
+  disabledNodeCount: number;
 };
 
 type TrendLineDefinition = {
@@ -734,13 +738,19 @@ export function PlatformMonitorPanel({ platform }: { platform: Platform }) {
   const snapshotQuery = useQuery({
     queryKey: ["platform-monitor", "snapshots", platform.id],
     queryFn: async () => {
-      const [nodePool, nodeLatency] = await Promise.all([
+      const [nodePool, nodeLatency, totalNodes, enabledNodes, disabledNodes] = await Promise.all([
         fetchPlatformSnapshotNodePool(platform.id),
         fetchPlatformSnapshotNodeLatency(platform.id),
+        listNodes({ platform_id: platform.id, limit: 1, offset: 0 }),
+        listNodes({ platform_id: platform.id, enabled: true, limit: 1, offset: 0 }),
+        listNodes({ platform_id: platform.id, enabled: false, limit: 1, offset: 0 }),
       ]);
       return {
         nodePool,
         nodeLatency,
+        totalNodeCount: totalNodes.total,
+        enabledNodeCount: enabledNodes.total,
+        disabledNodeCount: disabledNodes.total,
       } satisfies PlatformSnapshotBundle;
     },
     refetchInterval: SNAPSHOT_REFRESH_MS,
@@ -877,13 +887,17 @@ export function PlatformMonitorPanel({ platform }: { platform: Platform }) {
             <Waypoints size={18} />
           </div>
           <div>
-            <p className="platform-monitor-kpi-label">{t("可路由节点")}</p>
-            <p className="platform-monitor-kpi-value">{formatCount(snapshotNodePool?.routable_node_count ?? 0)}</p>
-            <p className="platform-monitor-kpi-sub">{t("出口 IP")} {formatCount(snapshotNodePool?.egress_ip_count ?? 0)}</p>
+            <p className="platform-monitor-kpi-label">{t("平台节点")}</p>
+            <p className="platform-monitor-kpi-value">{formatCount(snapshotQuery.data?.totalNodeCount ?? 0)}</p>
+            <p className="platform-monitor-kpi-sub">
+              <span style={{ color: "var(--success)" }}>{t("启用")} {formatCount(snapshotQuery.data?.enabledNodeCount ?? 0)}</span>
+              {" · "}
+              <span style={{ color: "var(--text-secondary)" }}>{t("禁用")} {formatCount(snapshotQuery.data?.disabledNodeCount ?? 0)}</span>
+            </p>
           </div>
           <Link to={`/nodes?platform_id=${encodeURIComponent(platform.id)}`} className="platform-monitor-kpi-link">
             <Link2 size={14} />
-            <span>{t("可路由节点")}</span>
+            <span>{t("查看节点")}</span>
           </Link>
         </Card>
 
